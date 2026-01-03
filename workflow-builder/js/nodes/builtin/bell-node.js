@@ -1,5 +1,5 @@
 /**
- * BellNode - plays 440 Hz audio notification and passes message through
+ * BellNode - plays audio notification and passes message through
  */
 import { DataNode } from '../abstract/data-node.js';
 import { NodeRegistry } from '../../core/registry.js';
@@ -12,6 +12,14 @@ export class BellNode extends DataNode {
     static color = '#EC407A'; // Pink - action output
 
     static propertySchema = [
+        {
+            key: 'frequency',
+            type: 'range',
+            label: 'Frequency (Hz)',
+            defaultValue: 440,
+            min: 100,
+            max: 1000
+        },
         {
             key: 'volume',
             type: 'range',
@@ -47,7 +55,7 @@ export class BellNode extends DataNode {
     }
 
     getHeight() {
-        return this.collapsed ? 56 : 88;
+        return this.collapsed ? 56 : 100;
     }
 
     getKeyToAdd() {
@@ -56,7 +64,7 @@ export class BellNode extends DataNode {
 
     getValueToAdd() {
         return {
-            frequency: 440,
+            frequency: this.properties.frequency ?? 440,
             playedAt: Date.now()
         };
     }
@@ -72,7 +80,8 @@ export class BellNode extends DataNode {
     _playSound() {
         try {
             const ctx = BellNode.getAudioContext();
-            const volume = (this.properties.volume || 70) / 100;
+            const frequency = this.properties.frequency ?? 440;
+            const volume = (this.properties.volume ?? 70) / 100;
             const duration = this._getDurationSeconds();
 
             const oscillator = ctx.createOscillator();
@@ -81,9 +90,9 @@ export class BellNode extends DataNode {
             oscillator.connect(gainNode);
             gainNode.connect(ctx.destination);
 
-            // 440 Hz sine wave (A4 note)
+            // Configurable frequency sine wave
             oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(440, ctx.currentTime);
+            oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
 
             // Volume envelope
             gainNode.gain.setValueAtTime(0, ctx.currentTime);
@@ -107,7 +116,8 @@ export class BellNode extends DataNode {
     }
 
     getPreviewText() {
-        return `440 Hz (${this.properties.volume}%)`;
+        const freq = this.properties.frequency ?? 440;
+        return `${freq} Hz`;
     }
 }
 
