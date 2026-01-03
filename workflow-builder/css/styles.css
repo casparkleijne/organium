@@ -1155,3 +1155,107 @@ body {
     animation: fade-out 0.5s ease-out forwards;
     animation-delay: 3s;
 }
+
+/* ========================================
+   Modal Dialog
+   ======================================== */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    backdrop-filter: blur(2px);
+}
+
+.modal-overlay.visible {
+    opacity: 1;
+}
+
+.modal-dialog {
+    background: var(--md-sys-color-surface-container-high);
+    border-radius: var(--md-sys-shape-corner-large);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    min-width: 320px;
+    max-width: 480px;
+    transform: scale(0.95) translateY(-10px);
+    transition: transform 0.2s ease;
+}
+
+.modal-overlay.visible .modal-dialog {
+    transform: scale(1) translateY(0);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-3);
+    padding: var(--md-sys-spacing-4);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.modal-header .material-symbols-outlined {
+    font-size: 24px;
+    color: var(--md-sys-color-primary);
+}
+
+.modal-header-error .material-symbols-outlined {
+    color: var(--md-sys-color-error);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface);
+}
+
+.modal-body {
+    padding: var(--md-sys-spacing-4);
+}
+
+.modal-body p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--md-sys-spacing-2);
+    padding: var(--md-sys-spacing-3) var(--md-sys-spacing-4);
+    border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.modal-actions .btn {
+    min-width: 80px;
+}
+
+.btn-text {
+    background: transparent;
+    color: var(--md-sys-color-primary);
+}
+
+.btn-text:hover {
+    background: var(--md-sys-color-primary-container);
+}
+
+.btn-danger {
+    background: var(--md-sys-color-error);
+    color: var(--md-sys-color-on-error);
+}
+
+.btn-danger:hover {
+    background: var(--md-sys-color-error);
+    filter: brightness(1.1);
+}

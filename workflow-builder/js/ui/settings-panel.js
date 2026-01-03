@@ -1,6 +1,7 @@
 /**
  * SettingsPanel - canvas settings in left sidebar
  */
+import { modal } from './modal.js';
 
 export class SettingsPanel {
     constructor(container, store, renderer, callbacks = {}) {
@@ -103,8 +104,13 @@ export class SettingsPanel {
         });
 
         // New
-        this.container.querySelector('#newBtn').addEventListener('click', () => {
-            if (confirm('Create new workflow? Unsaved changes will be lost.')) {
+        this.container.querySelector('#newBtn').addEventListener('click', async () => {
+            const confirmed = await modal.confirm(
+                'Create new workflow? Unsaved changes will be lost.',
+                'New Workflow',
+                { icon: 'note_add', danger: true, confirmText: 'Create New' }
+            );
+            if (confirmed) {
                 this.store.clear();
                 if (this.callbacks.onNotify) {
                     this.callbacks.onNotify('Canvas cleared');
@@ -150,7 +156,7 @@ export class SettingsPanel {
                             this.callbacks.onNotify('Workflow imported');
                         }
                     } catch (err) {
-                        alert('Failed to import workflow: ' + err.message);
+                        modal.error('Failed to import workflow: ' + err.message, 'Import Error');
                     }
                 };
                 reader.readAsText(file);

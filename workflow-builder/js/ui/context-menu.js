@@ -1,6 +1,7 @@
 /**
  * ContextMenu - right-click context menus
  */
+import { modal } from './modal.js';
 
 export class ContextMenu {
     constructor(store, renderer, callbacks = {}) {
@@ -153,8 +154,13 @@ export class ContextMenu {
 
         this._addDivider();
 
-        this._addItem('delete_forever', 'Clear canvas', () => {
-            if (confirm('Clear all nodes and connections?')) {
+        this._addItem('delete_forever', 'Clear canvas', async () => {
+            const confirmed = await modal.confirm(
+                'Clear all nodes and connections?',
+                'Clear Canvas',
+                { icon: 'delete_forever', danger: true, confirmText: 'Clear All' }
+            );
+            if (confirmed) {
                 this.store.clear();
                 if (this.callbacks.onNotify) {
                     this.callbacks.onNotify('Canvas cleared');
