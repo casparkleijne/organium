@@ -163,7 +163,7 @@ export class NodeRenderer {
         const ctx = this.ctx;
         const bounds = node.getBounds();
         const color = node.getColor();
-        const headerHeight = 48;
+        const headerHeight = 36;
 
         ctx.save();
         ctx.shadowBlur = 0; // Reset shadow state
@@ -207,20 +207,20 @@ export class NodeRenderer {
         ctx.stroke();
 
         // Icon in header
-        const iconX = bounds.x + 20;
+        const iconX = bounds.x + 16;
         const iconY = bounds.y + headerHeight / 2;
         ctx.fillStyle = getContrastColor(color);
-        ctx.font = '24px "Material Symbols Outlined"';
+        ctx.font = '20px "Material Symbols Outlined"';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(node.getIcon(), iconX, iconY);
 
         // Title in header
         ctx.fillStyle = getContrastColor(color);
-        ctx.font = '500 14px Roboto';
+        ctx.font = '500 13px Roboto';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(node.getDisplayTitle(), bounds.x + 40, iconY);
+        ctx.fillText(node.getDisplayTitle(), bounds.x + 32, iconY);
 
         // Body content (preview text)
         if (typeof node.getPreviewText === 'function') {
