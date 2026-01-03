@@ -12,18 +12,45 @@ export class Validator {
         const nodes = this.store.getNodes();
         const connections = this.store.getConnections();
 
-        // Check for start/scheduler node
-        const startNodes = [];
+        // Count start, scheduler, and end nodes
+        let startCount = 0;
+        let schedulerCount = 0;
+        let endCount = 0;
+
         nodes.forEach(node => {
-            if (node.getType() === 'start' || node.getType() === 'scheduler') {
-                startNodes.push(node);
-            }
+            const type = node.getType();
+            if (type === 'start') startCount++;
+            if (type === 'scheduler') schedulerCount++;
+            if (type === 'end') endCount++;
         });
 
-        if (startNodes.length === 0) {
+        // Must have exactly 1 start OR 1 scheduler (not both, not zero)
+        const entryCount = startCount + schedulerCount;
+        if (entryCount === 0) {
             errors.push({
                 type: 'error',
-                message: 'Workflow must have a Start or Scheduler node',
+                message: 'Workflow must have exactly 1 Start or Scheduler node',
+                nodeId: null
+            });
+        } else if (entryCount > 1) {
+            errors.push({
+                type: 'error',
+                message: `Workflow must have exactly 1 Start or Scheduler node (found ${startCount} Start, ${schedulerCount} Scheduler)`,
+                nodeId: null
+            });
+        }
+
+        // Must have exactly 1 end node
+        if (endCount === 0) {
+            errors.push({
+                type: 'error',
+                message: 'Workflow must have exactly 1 End node',
+                nodeId: null
+            });
+        } else if (endCount > 1) {
+            errors.push({
+                type: 'error',
+                message: `Workflow must have exactly 1 End node (found ${endCount})`,
                 nodeId: null
             });
         }
