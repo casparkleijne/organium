@@ -330,7 +330,12 @@ export class PropertyPanel {
         }
 
         if (input) {
-            input.className = 'property-input';
+            // Preserve existing classes like 'variable-select'
+            if (!input.className.includes('variable-select')) {
+                input.className = 'property-input';
+            } else {
+                input.className = 'property-input variable-select';
+            }
             field.appendChild(input);
         }
 
