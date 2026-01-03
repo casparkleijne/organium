@@ -57,7 +57,14 @@ export class Executor extends EventEmitter {
         this.store.getNodes().forEach(node => node.resetRunState());
 
         // Reset all connections
-        this.store.getConnections().forEach(conn => conn.resetRunState());
+        this.store.getConnections().forEach(conn => {
+            if (conn.resetRunState) {
+                conn.resetRunState();
+            } else {
+                conn.runState = 'idle';
+                conn.messageProgress = 0;
+            }
+        });
 
         // Clear previous state
         this.activeMessages.clear();
@@ -130,7 +137,14 @@ export class Executor extends EventEmitter {
         this.store.getNodes().forEach(node => node.resetRunState());
 
         // Reset all connections
-        this.store.getConnections().forEach(conn => conn.resetRunState());
+        this.store.getConnections().forEach(conn => {
+            if (conn.resetRunState) {
+                conn.resetRunState();
+            } else {
+                conn.runState = 'idle';
+                conn.messageProgress = 0;
+            }
+        });
 
         this.emit('progressDimmingChanged', false);
         this.emit('stopped');
@@ -316,7 +330,12 @@ export class Executor extends EventEmitter {
                 this.pendingForwards++;
 
                 // Activate connection for animation
-                conn.setRunState('active');
+                if (conn.setRunState) {
+                    conn.setRunState('active');
+                } else {
+                    conn.runState = 'active';
+                    conn.messageProgress = 0;
+                }
                 const animationDuration = 300 / this.speed;
                 this.activeConnectionAnimations.set(conn.id, {
                     startTime: performance.now(),
@@ -328,7 +347,11 @@ export class Executor extends EventEmitter {
                     this.pendingForwards--;
 
                     // Mark connection as completed
-                    conn.setRunState('completed');
+                    if (conn.setRunState) {
+                        conn.setRunState('completed');
+                    } else {
+                        conn.runState = 'completed';
+                    }
                     this.activeConnectionAnimations.delete(conn.id);
 
                     if (this.status === 'running') {
@@ -352,7 +375,12 @@ export class Executor extends EventEmitter {
                 this.pendingForwards++;
 
                 // Activate connection for animation
-                conn.setRunState('active');
+                if (conn.setRunState) {
+                    conn.setRunState('active');
+                } else {
+                    conn.runState = 'active';
+                    conn.messageProgress = 0;
+                }
                 const animationDuration = 300 / this.speed;
                 this.activeConnectionAnimations.set(conn.id, {
                     startTime: performance.now(),
@@ -363,7 +391,11 @@ export class Executor extends EventEmitter {
                     this.pendingForwards--;
 
                     // Mark connection as completed
-                    conn.setRunState('completed');
+                    if (conn.setRunState) {
+                        conn.setRunState('completed');
+                    } else {
+                        conn.runState = 'completed';
+                    }
                     this.activeConnectionAnimations.delete(conn.id);
 
                     if (this.status === 'running') {
@@ -425,7 +457,14 @@ export class Executor extends EventEmitter {
 
                 // Reset node and connection states
                 this.store.getNodes().forEach(node => node.resetRunState());
-                this.store.getConnections().forEach(conn => conn.resetRunState());
+                this.store.getConnections().forEach(conn => {
+                    if (conn.resetRunState) {
+                        conn.resetRunState();
+                    } else {
+                        conn.runState = 'idle';
+                        conn.messageProgress = 0;
+                    }
+                });
                 this.store.emit('change');
             }
         }, 3000);
