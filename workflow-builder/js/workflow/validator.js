@@ -61,6 +61,10 @@ export class Validator {
             errors.push(...nodeErrors);
         });
 
+        // Check for shared ports (only splitter output and await-all input allowed)
+        const sharedPortErrors = this._validateSharedPorts(nodes, connections);
+        errors.push(...sharedPortErrors);
+
         // Check timer/delay intervals
         const timerErrors = this._validateTimerIntervals(nodes, connections);
         errors.push(...timerErrors);
@@ -120,6 +124,54 @@ export class Validator {
                 }
             });
         }
+
+        return errors;
+    }
+
+    _validateSharedPorts(nodes, connections) {
+        const errors = [];
+
+        // Build maps of connections per port
+        const inputPortConnections = new Map(); // "nodeId:portId" -> count
+        const outputPortConnections = new Map(); // "nodeId:portId" -> count
+
+        connections.forEach(conn => {
+            const inputKey = `${conn.toNodeId}:${conn.toPortId}`;
+            const outputKey = `${conn.fromNodeId}:${conn.fromPortId}`;
+
+            inputPortConnections.set(inputKey, (inputPortConnections.get(inputKey) || 0) + 1);
+            outputPortConnections.set(outputKey, (outputPortConnections.get(outputKey) || 0) + 1);
+        });
+
+        // Check for shared input ports (only await-all allowed)
+        inputPortConnections.forEach((count, key) => {
+            if (count > 1) {
+                const [nodeId, portId] = key.split(':');
+                const node = this.store.getNode(nodeId);
+                if (node && node.getType() !== 'await-all') {
+                    errors.push({
+                        type: 'error',
+                        message: `Node '${node.getDisplayTitle()}' input port '${portId}' has multiple connections (${count})`,
+                        nodeId: nodeId
+                    });
+                }
+            }
+        });
+
+        // Check for shared output ports (only splitter allowed)
+        outputPortConnections.forEach((count, key) => {
+            if (count > 1) {
+                const [nodeId, portId] = key.split(':');
+                const node = this.store.getNode(nodeId);
+                if (node && node.getType() !== 'splitter') {
+                    errors.push({
+                        type: 'error',
+                        message: `Node '${node.getDisplayTitle()}' output port '${portId}' has multiple connections (${count})`,
+                        nodeId: nodeId
+                    });
+                }
+            }
+        });
 
         return errors;
     }
