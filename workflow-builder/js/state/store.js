@@ -67,6 +67,11 @@ export class Store extends EventEmitter {
                 node.properties.outputKey,
                 node.id
             );
+        } else if (type === 'counter' && node.properties.name) {
+            node.properties.name = this.generateUniqueVariableName(
+                node.properties.name,
+                node.id
+            );
         }
     }
 
@@ -225,6 +230,9 @@ export class Store extends EventEmitter {
                 break;
             case 'calculate':
                 vars.push(node.properties.outputKey || 'result');
+                break;
+            case 'counter':
+                vars.push(node.properties.name || 'count');
                 break;
             case 'start':
                 // Start node can have initial payload keys
