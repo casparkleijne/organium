@@ -179,14 +179,19 @@ export class SettingsPanel {
         const centerX = (rect.width / 2 - vp.panX) / vp.zoom;
         const centerY = (rect.height / 2 - vp.panY) / vp.zoom;
 
-        // Create start node (above center)
-        const startNode = this.store.addNode('start', centerX - 28, centerY - 100);
+        // Create default workflow: Scheduler → Delay → Bell → End
+        const spacing = 100;
+        const startY = centerY - spacing * 1.5;
 
-        // Create end node (below center)
-        const endNode = this.store.addNode('end', centerX - 28, centerY + 50);
+        const schedulerNode = this.store.addNode('scheduler', centerX - 28, startY);
+        const delayNode = this.store.addNode('delay', centerX - 28, startY + spacing);
+        const bellNode = this.store.addNode('bell', centerX - 28, startY + spacing * 2);
+        const endNode = this.store.addNode('end', centerX - 28, startY + spacing * 3);
 
         // Connect them
-        this.store.addConnection(startNode.id, 'output', endNode.id, 'input');
+        this.store.addConnection(schedulerNode.id, 'output', delayNode.id, 'input');
+        this.store.addConnection(delayNode.id, 'output', bellNode.id, 'input');
+        this.store.addConnection(bellNode.id, 'output', endNode.id, 'input');
 
         // Fit to content
         setTimeout(() => {
