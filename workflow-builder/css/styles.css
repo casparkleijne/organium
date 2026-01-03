@@ -821,3 +821,124 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--md-sys-color-outline);
 }
+
+/* ========================================
+   Validation Panel
+   ======================================== */
+
+#validation-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    display: none;
+}
+
+#validation-panel.visible {
+    display: block;
+}
+
+.validation-panel {
+    background: var(--md-sys-color-surface-container);
+    border-top: 1px solid var(--md-sys-color-outline-variant);
+    max-height: 200px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.validation-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-3);
+    background: var(--md-sys-color-surface-container-high);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.validation-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+}
+
+.validation-header h3 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface);
+}
+
+.validation-count {
+    background: var(--md-sys-color-error);
+    color: var(--md-sys-color-on-error);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.validation-count.warning {
+    background: var(--md-sys-color-tertiary);
+    color: var(--md-sys-color-on-tertiary);
+}
+
+.validation-close {
+    background: none;
+    border: none;
+    color: var(--md-sys-color-on-surface-variant);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--md-sys-shape-corner-small);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.validation-close:hover {
+    background: var(--md-sys-color-surface-container-highest);
+}
+
+.validation-list {
+    overflow-y: auto;
+    flex: 1;
+}
+
+.validation-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--md-sys-spacing-2);
+    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-3);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    cursor: pointer;
+    transition: background var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+.validation-item:hover {
+    background: var(--md-sys-color-surface-container-high);
+}
+
+.validation-item:last-child {
+    border-bottom: none;
+}
+
+.validation-item .material-symbols-outlined {
+    font-size: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.validation-item.error .material-symbols-outlined {
+    color: var(--md-sys-color-error);
+}
+
+.validation-item.warning .material-symbols-outlined {
+    color: var(--md-sys-color-tertiary);
+}
+
+.validation-message {
+    font-size: 13px;
+    color: var(--md-sys-color-on-surface);
+    line-height: 1.4;
+}

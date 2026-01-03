@@ -40,6 +40,7 @@ import { Snackbar } from './ui/snackbar.js';
 import { RunControls } from './ui/run-controls.js';
 import { CanvasControls } from './ui/canvas-controls.js';
 import { SettingsPanel } from './ui/settings-panel.js';
+import { ValidationPanel } from './ui/validation-panel.js';
 
 class WorkflowBuilder {
     constructor() {
@@ -47,6 +48,7 @@ class WorkflowBuilder {
         this.snackbar = new Snackbar();
 
         this._initRenderer();
+        this._initValidationPanel();
         this._initExecutor();
         this._initInteractions();
         this._initUI();
@@ -79,12 +81,23 @@ class WorkflowBuilder {
         this.renderer.render(this.store.getNodes(), this.store.getConnections());
     }
 
+    _initValidationPanel() {
+        this.validationPanel = new ValidationPanel(
+            document.getElementById('validation-panel'),
+            this.store,
+            this.renderer
+        );
+    }
+
     _initExecutor() {
         this.executor = new Executor(this.store);
 
         this.executor.on('validationError', (errors) => {
-            const errorMsg = errors.find(e => e.type === 'error');
-            this.snackbar.show(errorMsg ? errorMsg.message : 'Validation failed');
+            this.validationPanel.show(errors);
+        });
+
+        this.executor.on('started', () => {
+            this.validationPanel.hide();
         });
 
         this.executor.on('completed', () => {
