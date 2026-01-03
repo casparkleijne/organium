@@ -88,7 +88,7 @@ export class BaseNode {
     }
 
     getHeight() {
-        return this.collapsed ? 56 : 80;
+        return this.collapsed ? 56 : 72;
     }
 
     getBounds() {

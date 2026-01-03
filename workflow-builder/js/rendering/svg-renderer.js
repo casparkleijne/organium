@@ -376,7 +376,7 @@ export class SvgRenderer extends EventEmitter {
     renderExpandedNode(group, node) {
         const w = node.getWidth();
         const h = node.getHeight();
-        const headerHeight = 36;
+        const headerHeight = 28;
         let color = node.getColor();
 
         // Apply tint for completed/error states
@@ -407,20 +407,29 @@ export class SvgRenderer extends EventEmitter {
         const headerBottom = this.createRect(0, headerHeight - 4, w, 4, 0, color);
         group.appendChild(headerBottom);
 
+        // Subtle double line at bottom of header
+        const lineColor = this._blendColor(color, '#000000', 0.2);
+        const line1 = this.createLine(0, headerHeight, w, headerHeight, lineColor, 1);
+        line1.setAttribute('opacity', '0.4');
+        group.appendChild(line1);
+        const line2 = this.createLine(0, headerHeight + 2, w, headerHeight + 2, lineColor, 1);
+        line2.setAttribute('opacity', '0.2');
+        group.appendChild(line2);
+
         // Icon
-        const icon = this.createText(16, headerHeight / 2, node.getIcon(), getContrastColor(color), '20px');
+        const icon = this.createText(14, headerHeight / 2, node.getIcon(), getContrastColor(color), '16px');
         icon.setAttribute('font-family', 'Material Symbols Outlined');
         group.appendChild(icon);
 
         // Title
-        const title = this.createText(32, headerHeight / 2, node.getDisplayTitle(), getContrastColor(color), '13px');
+        const title = this.createText(30, headerHeight / 2, node.getDisplayTitle(), getContrastColor(color), '12px');
         title.setAttribute('text-anchor', 'start');
         title.setAttribute('font-weight', '500');
         group.appendChild(title);
 
         // Preview text
         if (typeof node.getPreviewText === 'function') {
-            const preview = this.createText(16, headerHeight + 20, node.getPreviewText(), this.colors.onSurfaceVariant, '12px');
+            const preview = this.createText(14, headerHeight + 18, node.getPreviewText(), this.colors.onSurfaceVariant, '11px');
             preview.setAttribute('text-anchor', 'start');
             group.appendChild(preview);
         }
@@ -725,6 +734,17 @@ export class SvgRenderer extends EventEmitter {
         circle.setAttribute('fill', fill);
         if (stroke) circle.setAttribute('stroke', stroke);
         return circle;
+    }
+
+    createLine(x1, y1, x2, y2, stroke, strokeWidth) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x1);
+        line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2);
+        line.setAttribute('y2', y2);
+        line.setAttribute('stroke', stroke);
+        line.setAttribute('stroke-width', strokeWidth);
+        return line;
     }
 
     createText(x, y, text, fill, size) {
