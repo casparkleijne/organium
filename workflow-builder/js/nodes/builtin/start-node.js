@@ -21,11 +21,11 @@ export class StartNode extends BaseNode {
     }
 
     getWidth() {
-        return this.collapsed ? 56 : 88;
+        return this.collapsed ? 28 : 44;
     }
 
     getHeight() {
-        return this.collapsed ? 56 : 88;
+        return this.collapsed ? 28 : 44;
     }
 
     enrich(message) {
