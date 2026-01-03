@@ -42,12 +42,17 @@ export class AwaitAllNode extends LogicNode {
         }
 
         const merged = Message.merge(this.arrivedMessages, this.id);
+        const arrivedCount = this.arrivedMessages.length;
+        const mergedFrom = this.arrivedMessages.map(m => m.id);
+
+        // Reset for next cycle (allows reuse in loops)
+        this.arrivedMessages = [];
 
         return {
             message: merged.withPath(this.id).withPayload({
                 [`_awaitAll_${this.id}`]: {
-                    arrivedCount: this.arrivedMessages.length,
-                    mergedFrom: this.arrivedMessages.map(m => m.id)
+                    arrivedCount: arrivedCount,
+                    mergedFrom: mergedFrom
                 }
             }),
             outputPort: 'output',
