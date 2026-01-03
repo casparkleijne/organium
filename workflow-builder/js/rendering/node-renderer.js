@@ -119,7 +119,7 @@ export class NodeRenderer {
 
         // Background
         ctx.fillStyle = this.surfaceContainer;
-        this._roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 6);
+        this._roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 3);
         ctx.fill();
 
         // Border
@@ -179,7 +179,7 @@ export class NodeRenderer {
 
         // Background
         ctx.fillStyle = this.surfaceContainer;
-        this._roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 8);
+        this._roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 4);
         ctx.fill();
 
         // Border
@@ -192,7 +192,7 @@ export class NodeRenderer {
         // Header
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.roundRect(bounds.x, bounds.y, bounds.width, headerHeight, [8, 8, 0, 0]);
+        ctx.roundRect(bounds.x, bounds.y, bounds.width, headerHeight, [4, 4, 0, 0]);
         ctx.fill();
 
         // Divider
@@ -268,7 +268,7 @@ export class NodeRenderer {
         // Hover state layer
         if (node.hovered && !node.selected) {
             ctx.fillStyle = withAlpha(this.onSurface, 0.08);
-            this._roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 8);
+            this._roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 4);
             ctx.fill();
         }
 
