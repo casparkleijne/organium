@@ -46,9 +46,9 @@ export class ConstantNode extends DataNode {
 
         switch (type) {
             case 'number':
-                if (this.properties.useRandom) {
-                    const min = this.properties.min || 0;
-                    const max = this.properties.max || 100;
+                if (this.properties.useRandom === true) {
+                    const min = typeof this.properties.min === 'number' ? this.properties.min : 0;
+                    const max = typeof this.properties.max === 'number' ? this.properties.max : 100;
                     return Math.floor(Math.random() * (max - min + 1)) + min;
                 }
                 return parseFloat(rawValue) || 0;
