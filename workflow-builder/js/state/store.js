@@ -109,6 +109,28 @@ export class Store extends EventEmitter {
             }
         }
 
+        // Check for shared port violations
+        const fromNode = this.getNode(fromNodeId);
+        const toNode = this.getNode(toNodeId);
+
+        // Block shared output ports (except splitter)
+        if (fromNode && fromNode.getType() !== 'splitter') {
+            for (const conn of this.connections.values()) {
+                if (conn.fromNodeId === fromNodeId && conn.fromPortId === fromPortId) {
+                    return null; // Port already has a connection
+                }
+            }
+        }
+
+        // Block shared input ports (except await-all)
+        if (toNode && toNode.getType() !== 'await-all') {
+            for (const conn of this.connections.values()) {
+                if (conn.toNodeId === toNodeId && conn.toPortId === toPortId) {
+                    return null; // Port already has a connection
+                }
+            }
+        }
+
         const connection = new Connection(fromNodeId, fromPortId, toNodeId, toPortId);
         this.connections.set(connection.id, connection);
         this.emit('connectionAdded', connection);
