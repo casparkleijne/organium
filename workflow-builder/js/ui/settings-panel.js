@@ -111,9 +111,9 @@ export class SettingsPanel {
                 { icon: 'note_add', danger: true, confirmText: 'Create New' }
             );
             if (confirmed) {
-                this.store.clear();
+                this._createNewWorkflow();
                 if (this.callbacks.onNotify) {
-                    this.callbacks.onNotify('Canvas cleared');
+                    this.callbacks.onNotify('New workflow created');
                 }
             }
         });
@@ -164,5 +164,35 @@ export class SettingsPanel {
 
             input.click();
         });
+    }
+
+    _createNewWorkflow() {
+        // Clear existing workflow
+        this.store.clear();
+
+        // Get canvas center position
+        const container = this.renderer.container;
+        const rect = container.getBoundingClientRect();
+        const vp = this.renderer.viewport;
+
+        // Calculate center in world coordinates
+        const centerX = (rect.width / 2 - vp.panX) / vp.zoom;
+        const centerY = (rect.height / 2 - vp.panY) / vp.zoom;
+
+        // Create start node (above center)
+        const startNode = this.store.addNode('start', centerX - 28, centerY - 100);
+
+        // Create end node (below center)
+        const endNode = this.store.addNode('end', centerX - 28, centerY + 50);
+
+        // Connect them
+        this.store.addConnection(startNode.id, 'output', endNode.id, 'input');
+
+        // Fit to content
+        setTimeout(() => {
+            this.renderer.fitToContent(this.store.getNodes(), 150);
+            const newVp = this.renderer.viewport;
+            this.store.setViewport(newVp.panX, newVp.panY, newVp.zoom);
+        }, 50);
     }
 }
