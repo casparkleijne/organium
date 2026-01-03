@@ -567,7 +567,8 @@ export class SvgRenderer extends EventEmitter {
     }
 
     getConnectionAt(worldX, worldY, connections, nodes) {
-        // Simple distance-based check for connections
+        const threshold = 15; // Distance threshold in pixels
+
         for (const conn of connections.values()) {
             const fromNode = nodes.get(conn.fromNodeId);
             const toNode = nodes.get(conn.toNodeId);
@@ -576,14 +577,49 @@ export class SvgRenderer extends EventEmitter {
             const from = fromNode.getPortPosition(conn.fromPortId, false);
             const to = toNode.getPortPosition(conn.toPortId, true);
 
-            // Check distance to bezier curve (simplified)
-            const midX = (from.x + to.x) / 2;
-            const midY = (from.y + to.y) / 2;
-            const dx = worldX - midX;
-            const dy = worldY - midY;
-            if (dx * dx + dy * dy < 400) return conn;
+            // Sample points along the bezier curve and check distance
+            if (this._pointNearBezier(worldX, worldY, from, to, threshold)) {
+                return conn;
+            }
         }
         return null;
+    }
+
+    _pointNearBezier(px, py, from, to, threshold) {
+        // Get control points for the bezier curve (same as createBezierPath)
+        const dy = to.y - from.y;
+        const curvature = Math.min(Math.max(dy * 0.5, 50), 150);
+
+        const p0 = from;
+        const p1 = { x: from.x, y: from.y + curvature };
+        const p2 = { x: to.x, y: to.y - curvature };
+        const p3 = to;
+
+        // Sample along the curve
+        const steps = 20;
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const point = this._bezierPoint(t, p0, p1, p2, p3);
+            const dx = px - point.x;
+            const dy = py - point.y;
+            if (dx * dx + dy * dy < threshold * threshold) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    _bezierPoint(t, p0, p1, p2, p3) {
+        const t2 = t * t;
+        const t3 = t2 * t;
+        const mt = 1 - t;
+        const mt2 = mt * mt;
+        const mt3 = mt2 * mt;
+
+        return {
+            x: mt3 * p0.x + 3 * mt2 * t * p1.x + 3 * mt * t2 * p2.x + t3 * p3.x,
+            y: mt3 * p0.y + 3 * mt2 * t * p1.y + 3 * mt * t2 * p2.y + t3 * p3.y
+        };
     }
 
     getNodesInRect(rect, nodes) {
