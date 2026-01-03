@@ -103,6 +103,11 @@ class WorkflowBuilder {
         this.executor.on('completed', () => {
             this.snackbar.show('Workflow completed');
         });
+
+        // Progress dimming integration
+        this.executor.on('progressDimmingChanged', (enabled) => {
+            this.renderer.setProgressDimming(enabled);
+        });
     }
 
     _initInteractions() {

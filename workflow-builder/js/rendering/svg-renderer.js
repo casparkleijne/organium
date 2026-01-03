@@ -18,6 +18,9 @@ export class SvgRenderer extends EventEmitter {
         this.svg.style.left = '0';
         container.appendChild(this.svg);
 
+        // Create defs for filters
+        this._createDefs();
+
         // Create layers
         this.gridLayer = this.createGroup('grid-layer');
         this.connectionLayer = this.createGroup('connection-layer');
@@ -40,6 +43,10 @@ export class SvgRenderer extends EventEmitter {
         this.selectionBox = null;
         this.insertTargetConnection = null;
 
+        // Progress dimming state
+        this.progressDimmingEnabled = false;
+        this.messageDots = new Map(); // connectionId -> dot element
+
         // Store reference for requestRender
         this._lastNodes = null;
         this._lastConnections = null;
@@ -53,10 +60,63 @@ export class SvgRenderer extends EventEmitter {
             onSurface: '#DEE4E1',
             onSurfaceVariant: '#BEC9C5',
             primary: '#91C6BC',
+            tertiary: '#E37434',
+            success: '#81C784',
+            error: '#FFB4AB',
             gridLine: '#1F2726'
         };
 
         this.renderGrid();
+    }
+
+    _createDefs() {
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+
+        // Glow filter for active/waiting nodes
+        const glowFilter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+        glowFilter.setAttribute('id', 'glow');
+        glowFilter.setAttribute('x', '-50%');
+        glowFilter.setAttribute('y', '-50%');
+        glowFilter.setAttribute('width', '200%');
+        glowFilter.setAttribute('height', '200%');
+
+        const feGaussianBlur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+        feGaussianBlur.setAttribute('stdDeviation', '4');
+        feGaussianBlur.setAttribute('result', 'coloredBlur');
+        glowFilter.appendChild(feGaussianBlur);
+
+        const feMerge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+        const feMergeNode1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+        feMergeNode1.setAttribute('in', 'coloredBlur');
+        const feMergeNode2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+        feMergeNode2.setAttribute('in', 'SourceGraphic');
+        feMerge.appendChild(feMergeNode1);
+        feMerge.appendChild(feMergeNode2);
+        glowFilter.appendChild(feMerge);
+
+        defs.appendChild(glowFilter);
+
+        // Grayscale filter for idle nodes during execution
+        const grayscaleFilter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+        grayscaleFilter.setAttribute('id', 'grayscale');
+
+        const feColorMatrix = document.createElementNS('http://www.w3.org/2000/svg', 'feColorMatrix');
+        feColorMatrix.setAttribute('type', 'saturate');
+        feColorMatrix.setAttribute('values', '0');
+        grayscaleFilter.appendChild(feColorMatrix);
+
+        defs.appendChild(grayscaleFilter);
+
+        this.svg.appendChild(defs);
+    }
+
+    setProgressDimming(enabled) {
+        this.progressDimmingEnabled = enabled;
+        if (!enabled) {
+            // Clear message dots
+            this.messageDots.forEach(dot => dot.remove());
+            this.messageDots.clear();
+        }
     }
 
     createGroup(id) {
@@ -169,6 +229,31 @@ export class SvgRenderer extends EventEmitter {
         group.innerHTML = '';
         group.setAttribute('transform', `translate(${node.x}, ${node.y})`);
 
+        // Apply progress dimming styles
+        if (this.progressDimmingEnabled) {
+            const opacity = this._getNodeOpacity(node.runState);
+            group.setAttribute('opacity', opacity);
+
+            // Apply grayscale filter for idle nodes
+            if (node.runState === 'idle') {
+                group.setAttribute('filter', 'url(#grayscale)');
+            } else {
+                group.removeAttribute('filter');
+            }
+
+            // Add pulse animation class for waiting/active
+            group.classList.remove('pulse-slow', 'pulse-glow');
+            if (node.runState === 'waiting') {
+                group.classList.add('pulse-slow');
+            } else if (node.runState === 'active') {
+                group.classList.add('pulse-glow');
+            }
+        } else {
+            group.setAttribute('opacity', '1');
+            group.removeAttribute('filter');
+            group.classList.remove('pulse-slow', 'pulse-glow');
+        }
+
         if (node.isCircular()) {
             this.renderCircularNode(group, node);
         } else if (node.collapsed) {
@@ -178,13 +263,34 @@ export class SvgRenderer extends EventEmitter {
         }
     }
 
+    _getNodeOpacity(runState) {
+        switch (runState) {
+            case 'idle': return 0.4;
+            case 'waiting': return 0.7;
+            case 'active':
+            case 'completed':
+            case 'error':
+                return 1;
+            default: return 1;
+        }
+    }
+
     renderCircularNode(group, node) {
         const w = node.getWidth();
         const h = node.getHeight();
         const cx = w / 2;
         const cy = h / 2;
         const r = w / 2;
-        const color = node.getColor();
+        let color = node.getColor();
+
+        // Apply tint for completed/error states
+        if (this.progressDimmingEnabled) {
+            if (node.runState === 'completed') {
+                color = this._blendColor(color, this.colors.success, 0.3);
+            } else if (node.runState === 'error') {
+                color = this._blendColor(color, this.colors.error, 0.3);
+            }
+        }
 
         // Glow effect for active/waiting
         if (node.runState === 'active' || node.runState === 'waiting') {
@@ -210,16 +316,29 @@ export class SvgRenderer extends EventEmitter {
         // Ports
         this.renderPorts(group, node);
 
-        // Completed badge
+        // Status badges
         if (node.runState === 'completed') {
-            this.renderCompletedBadge(group, w - 8, 8);
+            this.renderBadge(group, w - 8, 8, 'check', this.colors.success);
+        } else if (node.runState === 'error') {
+            this.renderBadge(group, w - 8, 8, 'close', this.colors.error);
+        } else if (node.runState === 'waiting') {
+            this.renderBadge(group, w - 8, 8, 'hourglass_empty', this.colors.tertiary);
         }
     }
 
     renderCollapsedNode(group, node) {
         const w = node.getWidth();
         const h = node.getHeight();
-        const color = node.getColor();
+        let color = node.getColor();
+
+        // Apply tint for completed/error states
+        if (this.progressDimmingEnabled) {
+            if (node.runState === 'completed') {
+                color = this._blendColor(color, this.colors.success, 0.3);
+            } else if (node.runState === 'error') {
+                color = this._blendColor(color, this.colors.error, 0.3);
+            }
+        }
 
         // Background
         const bg = this.createRect(0, 0, w, h, 3, this.colors.surface);
@@ -244,9 +363,13 @@ export class SvgRenderer extends EventEmitter {
         // Ports
         this.renderPorts(group, node);
 
-        // Completed badge
+        // Status badges
         if (node.runState === 'completed') {
-            this.renderCompletedBadge(group, w - 4, 4);
+            this.renderBadge(group, w - 4, 4, 'check', this.colors.success);
+        } else if (node.runState === 'error') {
+            this.renderBadge(group, w - 4, 4, 'close', this.colors.error);
+        } else if (node.runState === 'waiting') {
+            this.renderBadge(group, w - 4, 4, 'hourglass_empty', this.colors.tertiary);
         }
     }
 
@@ -254,7 +377,16 @@ export class SvgRenderer extends EventEmitter {
         const w = node.getWidth();
         const h = node.getHeight();
         const headerHeight = 36;
-        const color = node.getColor();
+        let color = node.getColor();
+
+        // Apply tint for completed/error states
+        if (this.progressDimmingEnabled) {
+            if (node.runState === 'completed') {
+                color = this._blendColor(color, this.colors.success, 0.3);
+            } else if (node.runState === 'error') {
+                color = this._blendColor(color, this.colors.error, 0.3);
+            }
+        }
 
         // Background
         const bg = this.createRect(0, 0, w, h, 4, this.colors.surface);
@@ -307,9 +439,13 @@ export class SvgRenderer extends EventEmitter {
         // Ports
         this.renderPorts(group, node);
 
-        // Completed badge
+        // Status badges
         if (node.runState === 'completed') {
-            this.renderCompletedBadge(group, w - 8, 8);
+            this.renderBadge(group, w - 8, 8, 'check', this.colors.success);
+        } else if (node.runState === 'error') {
+            this.renderBadge(group, w - 8, 8, 'close', this.colors.error);
+        } else if (node.runState === 'waiting') {
+            this.renderBadge(group, w - 8, 8, 'hourglass_empty', this.colors.tertiary);
         }
     }
 
@@ -347,13 +483,33 @@ export class SvgRenderer extends EventEmitter {
         group.appendChild(circle);
     }
 
-    renderCompletedBadge(group, x, y) {
-        const circle = this.createCircle(x, y, 10, '#81C784', 'none');
+    renderBadge(group, x, y, icon, color) {
+        const circle = this.createCircle(x, y, 10, color, 'none');
         group.appendChild(circle);
 
-        const check = this.createText(x, y, 'check', '#FFFFFF', '16px');
-        check.setAttribute('font-family', 'Material Symbols Outlined');
-        group.appendChild(check);
+        const iconEl = this.createText(x, y, icon, '#FFFFFF', '14px');
+        iconEl.setAttribute('font-family', 'Material Symbols Outlined');
+        group.appendChild(iconEl);
+    }
+
+    _blendColor(color1, color2, ratio) {
+        // Parse hex colors
+        const hex1 = color1.replace('#', '');
+        const hex2 = color2.replace('#', '');
+
+        const r1 = parseInt(hex1.substring(0, 2), 16);
+        const g1 = parseInt(hex1.substring(2, 4), 16);
+        const b1 = parseInt(hex1.substring(4, 6), 16);
+
+        const r2 = parseInt(hex2.substring(0, 2), 16);
+        const g2 = parseInt(hex2.substring(2, 4), 16);
+        const b2 = parseInt(hex2.substring(4, 6), 16);
+
+        const r = Math.round(r1 * (1 - ratio) + r2 * ratio);
+        const g = Math.round(g1 * (1 - ratio) + g2 * ratio);
+        const b = Math.round(b1 * (1 - ratio) + b2 * ratio);
+
+        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
     }
 
     renderConnections(connections, nodes) {
@@ -395,15 +551,94 @@ export class SvgRenderer extends EventEmitter {
         const d = this.createBezierPath(fromPos, toPos);
         path.setAttribute('d', d);
         path.setAttribute('fill', 'none');
-        path.setAttribute('stroke', isInsertTarget ? '#FFD54F' : this.colors.primary);
-        path.setAttribute('stroke-width', isInsertTarget ? '4' : '2');
         path.setAttribute('stroke-linecap', 'round');
 
-        if (isInsertTarget) {
-            path.setAttribute('stroke-dasharray', '8,4');
+        // Apply progress dimming styles for connections
+        if (this.progressDimmingEnabled) {
+            const opacity = this._getConnectionOpacity(conn.runState);
+            path.setAttribute('opacity', opacity);
+
+            if (conn.runState === 'idle') {
+                path.setAttribute('stroke', this.colors.outline);
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('stroke-dasharray', '6,4');
+            } else if (conn.runState === 'active') {
+                path.setAttribute('stroke', this.colors.primary);
+                path.setAttribute('stroke-width', '3');
+                path.removeAttribute('stroke-dasharray');
+            } else if (conn.runState === 'completed') {
+                path.setAttribute('stroke', this.colors.primary);
+                path.setAttribute('stroke-width', '2');
+                path.removeAttribute('stroke-dasharray');
+            }
+
+            // Render message dot for active connections
+            if (conn.runState === 'active') {
+                this.renderMessageDot(conn, fromPos, toPos);
+            } else {
+                this.removeMessageDot(conn.id);
+            }
         } else {
-            path.removeAttribute('stroke-dasharray');
+            path.setAttribute('opacity', '1');
+            path.setAttribute('stroke', isInsertTarget ? '#FFD54F' : this.colors.primary);
+            path.setAttribute('stroke-width', isInsertTarget ? '4' : '2');
+
+            if (isInsertTarget) {
+                path.setAttribute('stroke-dasharray', '8,4');
+            } else {
+                path.removeAttribute('stroke-dasharray');
+            }
+
+            this.removeMessageDot(conn.id);
         }
+    }
+
+    _getConnectionOpacity(runState) {
+        switch (runState) {
+            case 'idle': return 0.3;
+            case 'active':
+            case 'completed':
+                return 1;
+            default: return 1;
+        }
+    }
+
+    renderMessageDot(conn, fromPos, toPos) {
+        let dot = this.messageDots.get(conn.id);
+        if (!dot) {
+            dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            dot.setAttribute('r', '6');
+            dot.setAttribute('fill', this.colors.tertiary);
+            dot.classList.add('message-dot');
+            this.overlayLayer.appendChild(dot);
+            this.messageDots.set(conn.id, dot);
+        }
+
+        // Calculate position along bezier curve based on progress
+        const progress = conn.messageProgress || 0;
+        const point = this._getBezierPointAtProgress(fromPos, toPos, progress);
+        dot.setAttribute('cx', point.x);
+        dot.setAttribute('cy', point.y);
+    }
+
+    removeMessageDot(connId) {
+        const dot = this.messageDots.get(connId);
+        if (dot) {
+            dot.remove();
+            this.messageDots.delete(connId);
+        }
+    }
+
+    _getBezierPointAtProgress(from, to, t) {
+        const dy = to.y - from.y;
+        const curvature = Math.min(Math.max(dy * 0.5, 50), 150);
+
+        const p0 = from;
+        const p1 = { x: from.x, y: from.y + curvature };
+        const p2 = { x: to.x, y: to.y - curvature };
+        const p3 = to;
+
+        return this._bezierPoint(t, p0, p1, p2, p3);
     }
 
     createBezierPath(from, to) {

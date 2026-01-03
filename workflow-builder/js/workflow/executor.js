@@ -19,6 +19,9 @@ export class Executor extends EventEmitter {
         this.schedulerIntervals = new Map();
         this.pendingForwards = 0; // Track setTimeout forwards
 
+        // Active connection animations
+        this.activeConnectionAnimations = new Map(); // connId -> { startTime, duration }
+
         this.animationFrameId = null;
         this.lastUpdateTime = 0;
     }
@@ -53,14 +56,19 @@ export class Executor extends EventEmitter {
         // Reset all nodes
         this.store.getNodes().forEach(node => node.resetRunState());
 
+        // Reset all connections
+        this.store.getConnections().forEach(conn => conn.resetRunState());
+
         // Clear previous state
         this.activeMessages.clear();
         this.pendingDelays.clear();
         this.pendingForwards = 0;
+        this.activeConnectionAnimations.clear();
         this._clearSchedulers();
 
         this.status = 'running';
         this.store.setExecutionStatus('running');
+        this.emit('progressDimmingChanged', true);
         this.emit('started');
 
         // Start from all start/scheduler nodes
@@ -116,10 +124,15 @@ export class Executor extends EventEmitter {
         this.activeMessages.clear();
         this.pendingDelays.clear();
         this.pendingForwards = 0;
+        this.activeConnectionAnimations.clear();
 
         // Reset all nodes
         this.store.getNodes().forEach(node => node.resetRunState());
 
+        // Reset all connections
+        this.store.getConnections().forEach(conn => conn.resetRunState());
+
+        this.emit('progressDimmingChanged', false);
         this.emit('stopped');
     }
 
@@ -182,6 +195,16 @@ export class Executor extends EventEmitter {
             if (node) {
                 node.setRunState('completed');
                 this._forwardMessage(node, delay.result.message, delay.result.outputPort);
+            }
+        });
+
+        // Update message dot animations
+        const now = performance.now();
+        this.activeConnectionAnimations.forEach((anim, connId) => {
+            const conn = this.store.getConnection(connId);
+            if (conn) {
+                const elapsed = now - anim.startTime;
+                conn.messageProgress = Math.min(elapsed / anim.duration, 1);
             }
         });
 
@@ -291,13 +314,27 @@ export class Executor extends EventEmitter {
             if (targetNode) {
                 // Track pending forward
                 this.pendingForwards++;
-                // Small delay before activating next node for visual effect
+
+                // Activate connection for animation
+                conn.setRunState('active');
+                const animationDuration = 300 / this.speed;
+                this.activeConnectionAnimations.set(conn.id, {
+                    startTime: performance.now(),
+                    duration: animationDuration
+                });
+
+                // Delay before activating next node (with message dot animation)
                 setTimeout(() => {
                     this.pendingForwards--;
+
+                    // Mark connection as completed
+                    conn.setRunState('completed');
+                    this.activeConnectionAnimations.delete(conn.id);
+
                     if (this.status === 'running') {
                         this._processNode(targetNode, message);
                     }
-                }, 100 / this.speed);
+                }, animationDuration);
             }
         });
     }
@@ -313,12 +350,26 @@ export class Executor extends EventEmitter {
             if (targetNode) {
                 // Track pending forward
                 this.pendingForwards++;
+
+                // Activate connection for animation
+                conn.setRunState('active');
+                const animationDuration = 300 / this.speed;
+                this.activeConnectionAnimations.set(conn.id, {
+                    startTime: performance.now(),
+                    duration: animationDuration
+                });
+
                 setTimeout(() => {
                     this.pendingForwards--;
+
+                    // Mark connection as completed
+                    conn.setRunState('completed');
+                    this.activeConnectionAnimations.delete(conn.id);
+
                     if (this.status === 'running') {
                         this._processNode(targetNode, forkedMessage);
                     }
-                }, 100 / this.speed);
+                }, animationDuration);
             }
         });
     }
@@ -366,5 +417,17 @@ export class Executor extends EventEmitter {
         this.store.setExecutionStatus('completed');
         this._stopLoop();
         this.emit('completed');
+
+        // Keep completed states visible for 3 seconds, then fade out
+        setTimeout(() => {
+            if (this.status === 'completed') {
+                this.emit('progressDimmingChanged', false);
+
+                // Reset node and connection states
+                this.store.getNodes().forEach(node => node.resetRunState());
+                this.store.getConnections().forEach(conn => conn.resetRunState());
+                this.store.emit('change');
+            }
+        }, 3000);
     }
 }

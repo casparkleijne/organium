@@ -1092,3 +1092,49 @@ body {
     color: var(--md-sys-color-on-surface);
     line-height: 1.4;
 }
+
+/* ========================================
+   Progress Dimming Animations
+   ======================================== */
+
+/* Slow pulse for waiting nodes */
+@keyframes pulse-slow {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 0.9; }
+}
+
+.pulse-slow {
+    animation: pulse-slow 2s ease-in-out infinite;
+}
+
+/* Glow pulse for active nodes */
+@keyframes pulse-glow {
+    0%, 100% {
+        opacity: 1;
+        filter: drop-shadow(0 0 4px var(--md-sys-color-primary));
+    }
+    50% {
+        opacity: 1;
+        filter: drop-shadow(0 0 12px var(--md-sys-color-primary));
+    }
+}
+
+.pulse-glow {
+    animation: pulse-glow 1s ease-in-out infinite;
+}
+
+/* Message dot animation */
+.message-dot {
+    filter: drop-shadow(0 0 4px var(--md-sys-color-tertiary));
+}
+
+/* Fade out animation for completed workflow */
+@keyframes fade-out {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.progress-fade-out {
+    animation: fade-out 0.5s ease-out forwards;
+    animation-delay: 3s;
+}
