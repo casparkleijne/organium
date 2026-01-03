@@ -10,7 +10,7 @@ export class AwaitAllNode extends LogicNode {
     static category = 'Logic';
     static displayName = 'Await All';
     static icon = 'merge';
-    static color = '#81C784';
+    static color = '#FFD54F'; // Yellow - merging
 
     static propertySchema = [];
     static inputPorts = [{ id: 'input', position: 'top' }];

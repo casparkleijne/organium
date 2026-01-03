@@ -10,7 +10,7 @@ export class SchedulerNode extends BaseNode {
     static category = 'Flow Control';
     static displayName = 'Scheduler';
     static icon = 'update';
-    static color = '#D0BCFF';
+    static color = '#66BB6A'; // Light green - recurring trigger
 
     static propertySchema = [
         { key: 'interval', type: 'number', label: 'Interval (seconds)', defaultValue: 5, min: 0.1, step: 0.1 },

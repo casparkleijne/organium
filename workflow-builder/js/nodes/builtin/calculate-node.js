@@ -9,7 +9,7 @@ export class CalculateNode extends BaseNode {
     static category = 'Data';
     static displayName = 'Calculate';
     static icon = 'calculate';
-    static color = '#64B5F6';
+    static color = '#26A69A'; // Teal - data processing
 
     static propertySchema = [
         {

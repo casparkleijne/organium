@@ -9,7 +9,7 @@ export class ActionNode extends FlowNode {
     static category = 'Flow';
     static displayName = 'Action';
     static icon = 'settings';
-    static color = '#91C6BC';
+    static color = '#29B6F6'; // Light blue - flow action
 
     static propertySchema = [
         { key: 'description', type: 'string', label: 'Description', defaultValue: '', placeholder: 'Describe this action' },

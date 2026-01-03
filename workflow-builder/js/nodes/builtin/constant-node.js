@@ -9,7 +9,7 @@ export class ConstantNode extends DataNode {
     static category = 'Data';
     static displayName = 'Constant';
     static icon = 'data_object';
-    static color = '#4B9DA9';
+    static color = '#26C6DA'; // Cyan - data
 
     static propertySchema = [
         {

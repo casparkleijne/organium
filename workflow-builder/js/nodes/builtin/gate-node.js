@@ -10,7 +10,7 @@ export class GateNode extends LogicNode {
     static category = 'Logic';
     static displayName = 'Gate';
     static icon = 'lock_open';
-    static color = '#CE93D8';
+    static color = '#FFB74D'; // Light orange - gating
 
     static propertySchema = [];
     static inputPorts = [

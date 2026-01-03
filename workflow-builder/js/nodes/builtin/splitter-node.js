@@ -9,7 +9,7 @@ export class SplitterNode extends BaseNode {
     static category = 'Logic';
     static displayName = 'Splitter';
     static icon = 'share';
-    static color = '#E3C234';
+    static color = '#FFCA28'; // Amber - splitting
 
     static propertySchema = [];
     static inputPorts = [{ id: 'input', position: 'top' }];

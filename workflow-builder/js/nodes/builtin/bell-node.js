@@ -9,7 +9,7 @@ export class BellNode extends DataNode {
     static category = 'Action';
     static displayName = 'Bell';
     static icon = 'notifications';
-    static color = '#F48FB1';
+    static color = '#EC407A'; // Pink - action output
 
     static propertySchema = [
         {

@@ -9,7 +9,7 @@ export class DelayNode extends FlowNode {
     static category = 'Flow';
     static displayName = 'Delay';
     static icon = 'schedule';
-    static color = '#91C6BC';
+    static color = '#42A5F5'; // Blue - flow timing
 
     static propertySchema = [
         { key: 'seconds', type: 'number', label: 'Seconds', defaultValue: 1, min: 0.1, step: 0.1 }

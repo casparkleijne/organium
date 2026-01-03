@@ -9,7 +9,7 @@ export class EndNode extends BaseNode {
     static category = 'Flow Control';
     static displayName = 'End';
     static icon = 'stop';
-    static color = '#E37434';
+    static color = '#EF5350'; // Red - "stop"
 
     static propertySchema = [];
     static inputPorts = [{ id: 'input', position: 'top' }];

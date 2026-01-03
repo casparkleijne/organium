@@ -9,7 +9,7 @@ export class DecisionNode extends LogicNode {
     static category = 'Logic';
     static displayName = 'Decision';
     static icon = 'call_split';
-    static color = '#E37434';
+    static color = '#FFA726'; // Orange - branching
 
     static propertySchema = [
         {
