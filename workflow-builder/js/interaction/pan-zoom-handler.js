@@ -60,23 +60,30 @@ export class PanZoomHandler {
         this.store.setViewport(newPanX, newPanY, newZoom);
     }
 
+    _getSize() {
+        const el = this.renderer.svg || this.renderer.canvas;
+        const rect = el.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+    }
+
     zoomIn() {
-        const viewport = this.store.getViewport();
-        const centerX = this.renderer.canvas.width / 2;
-        const centerY = this.renderer.canvas.height / 2;
+        const size = this._getSize();
+        const centerX = size.width / 2;
+        const centerY = size.height / 2;
         this.zoom(-1, centerX, centerY);
     }
 
     zoomOut() {
-        const viewport = this.store.getViewport();
-        const centerX = this.renderer.canvas.width / 2;
-        const centerY = this.renderer.canvas.height / 2;
+        const size = this._getSize();
+        const centerX = size.width / 2;
+        const centerY = size.height / 2;
         this.zoom(1, centerX, centerY);
     }
 
     resetZoom() {
-        const centerX = this.renderer.canvas.width / 2;
-        const centerY = this.renderer.canvas.height / 2;
+        const size = this._getSize();
+        const centerX = size.width / 2;
+        const centerY = size.height / 2;
         this.store.setViewport(centerX - 200, centerY - 200, 1);
     }
 

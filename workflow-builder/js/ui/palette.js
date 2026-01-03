@@ -72,10 +72,10 @@ export class Palette {
         this.container.addEventListener('dragstart', this._onDragStart.bind(this));
         this.container.addEventListener('dragend', this._onDragEnd.bind(this));
 
-        // Drop on canvas
-        const canvas = this.renderer.canvas;
-        canvas.addEventListener('dragover', this._onDragOver.bind(this));
-        canvas.addEventListener('drop', this._onDrop.bind(this));
+        // Drop on canvas/svg
+        const target = this.renderer.svg || this.renderer.canvas;
+        target.addEventListener('dragover', this._onDragOver.bind(this));
+        target.addEventListener('drop', this._onDrop.bind(this));
     }
 
     _onDragStart(e) {
@@ -111,7 +111,8 @@ export class Palette {
         if (!this.draggedType) return;
         e.preventDefault();
 
-        const rect = this.renderer.canvas.getBoundingClientRect();
+        const el = this.renderer.svg || this.renderer.canvas;
+        const rect = el.getBoundingClientRect();
         const screenX = e.clientX - rect.left;
         const screenY = e.clientY - rect.top;
         const world = this.renderer.screenToWorld(screenX, screenY);
