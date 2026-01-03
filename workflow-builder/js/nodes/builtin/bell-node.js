@@ -1,5 +1,5 @@
 /**
- * BellNode - plays an audio notification and passes message through
+ * BellNode - plays 440 Hz audio notification and passes message through
  */
 import { DataNode } from '../abstract/data-node.js';
 import { NodeRegistry } from '../../core/registry.js';
@@ -12,20 +12,6 @@ export class BellNode extends DataNode {
     static color = '#F48FB1';
 
     static propertySchema = [
-        {
-            key: 'sound',
-            type: 'select',
-            label: 'Sound',
-            defaultValue: 'chime',
-            options: [
-                { value: 'chime', label: 'Chime' },
-                { value: 'bell', label: 'Bell' },
-                { value: 'alert', label: 'Alert' },
-                { value: 'success', label: 'Success' },
-                { value: 'error', label: 'Error' },
-                { value: 'notification', label: 'Notification' }
-            ]
-        },
         {
             key: 'volume',
             type: 'range',
@@ -61,7 +47,7 @@ export class BellNode extends DataNode {
     }
 
     getHeight() {
-        return this.collapsed ? 56 : 100;
+        return this.collapsed ? 56 : 88;
     }
 
     getKeyToAdd() {
@@ -70,7 +56,7 @@ export class BellNode extends DataNode {
 
     getValueToAdd() {
         return {
-            sound: this.properties.sound,
+            frequency: 440,
             playedAt: Date.now()
         };
     }
@@ -87,28 +73,17 @@ export class BellNode extends DataNode {
         try {
             const ctx = BellNode.getAudioContext();
             const volume = (this.properties.volume || 70) / 100;
-            const sound = this.properties.sound || 'chime';
             const duration = this._getDurationSeconds();
 
-            // Create oscillator-based sounds
             const oscillator = ctx.createOscillator();
             const gainNode = ctx.createGain();
 
             oscillator.connect(gainNode);
             gainNode.connect(ctx.destination);
 
-            // Configure sound based on type
-            const soundConfig = this._getSoundConfig(sound);
-            oscillator.type = soundConfig.type;
-            oscillator.frequency.setValueAtTime(soundConfig.freq, ctx.currentTime);
-
-            // Apply frequency modulation for some sounds
-            if (soundConfig.freqEnd) {
-                oscillator.frequency.exponentialRampToValueAtTime(
-                    soundConfig.freqEnd,
-                    ctx.currentTime + duration
-                );
-            }
+            // 440 Hz sine wave (A4 note)
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440, ctx.currentTime);
 
             // Volume envelope
             gainNode.gain.setValueAtTime(0, ctx.currentTime);
@@ -131,20 +106,8 @@ export class BellNode extends DataNode {
         }
     }
 
-    _getSoundConfig(sound) {
-        const configs = {
-            chime: { type: 'sine', freq: 880, freqEnd: 440 },
-            bell: { type: 'sine', freq: 660, freqEnd: 330 },
-            alert: { type: 'square', freq: 440, freqEnd: 220 },
-            success: { type: 'sine', freq: 523, freqEnd: 784 },
-            error: { type: 'sawtooth', freq: 220, freqEnd: 110 },
-            notification: { type: 'triangle', freq: 740, freqEnd: 587 }
-        };
-        return configs[sound] || configs.chime;
-    }
-
     getPreviewText() {
-        return `${this.properties.sound} (${this.properties.volume}%)`;
+        return `440 Hz (${this.properties.volume}%)`;
     }
 }
 
