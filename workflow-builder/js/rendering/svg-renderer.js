@@ -76,6 +76,7 @@ export class SvgRenderer extends EventEmitter {
         this.gridLayer.setAttribute('transform', transform);
         this.connectionLayer.setAttribute('transform', transform);
         this.nodeLayer.setAttribute('transform', transform);
+        this.overlayLayer.setAttribute('transform', transform);
     }
 
     setGridSettings(show, size) {
