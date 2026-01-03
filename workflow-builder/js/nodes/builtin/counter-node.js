@@ -13,7 +13,7 @@ export class CounterNode extends DataNode {
 
     static propertySchema = [
         { key: 'name', type: 'string', label: 'Name', defaultValue: 'count', placeholder: 'Variable name' },
-        { key: 'start', type: 'number', label: 'Start value', defaultValue: 0 },
+        { key: 'start', type: 'number', label: 'Start value', defaultValue: 1 },
         { key: 'step', type: 'number', label: 'Step', defaultValue: 1 }
     ];
 
@@ -41,16 +41,16 @@ export class CounterNode extends DataNode {
     getValueToAdd() {
         // Initialize on first call
         if (this._count === null) {
-            this._count = this.properties.start || 0;
+            this._count = this.properties.start ?? 1;
         } else {
-            this._count += (this.properties.step || 1);
+            this._count += (this.properties.step ?? 1);
         }
         return this._count;
     }
 
     getPreviewText() {
         const name = this.properties.name || 'count';
-        const current = this._count !== null ? this._count : this.properties.start || 0;
+        const current = this._count !== null ? this._count : (this.properties.start ?? 1);
         return `${name}: ${current}`;
     }
 }
