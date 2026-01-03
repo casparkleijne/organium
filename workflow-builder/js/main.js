@@ -23,7 +23,7 @@ import './nodes/builtin/gate-node.js';
 import { Store } from './state/store.js';
 
 // Import rendering
-import { Renderer } from './rendering/renderer.js';
+import { SvgRenderer } from './rendering/svg-renderer.js';
 
 // Import interactions
 import { MouseHandler } from './interaction/mouse-handler.js';
@@ -46,39 +46,19 @@ class WorkflowBuilder {
         this.store = new Store();
         this.snackbar = new Snackbar();
 
-        this._initCanvas();
         this._initRenderer();
         this._initExecutor();
         this._initInteractions();
         this._initUI();
         this._initDemoWorkflow();
-        this._startRenderLoop();
 
         console.log('Workflow Builder initialized');
         console.log('Registered node types:', NodeRegistry.getAllTypes().map(t => t.type));
     }
 
-    _initCanvas() {
-        this.canvas = document.getElementById('canvas');
-        this.minimapCanvas = document.getElementById('minimap');
-
-        // Set canvas size
-        this._resizeCanvas();
-        window.addEventListener('resize', () => this._resizeCanvas());
-    }
-
-    _resizeCanvas() {
-        const container = this.canvas.parentElement;
-        this.canvas.width = container.clientWidth;
-        this.canvas.height = container.clientHeight;
-
-        if (this.renderer) {
-            this.renderer.resize(this.canvas.width, this.canvas.height);
-        }
-    }
-
     _initRenderer() {
-        this.renderer = new Renderer(this.canvas, this.minimapCanvas);
+        const container = document.getElementById('canvas-container');
+        this.renderer = new SvgRenderer(container);
 
         // Apply initial settings
         const settings = this.store.getSettings();
@@ -90,10 +70,13 @@ class WorkflowBuilder {
             this.renderer.setViewport(viewport.panX, viewport.panY, viewport.zoom);
         });
 
-        // Re-render when store changes (e.g., during workflow execution)
+        // Re-render when store changes
         this.store.on('change', () => {
-            this.renderer.requestRender();
+            this.renderer.render(this.store.getNodes(), this.store.getConnections());
         });
+
+        // Initial render
+        this.renderer.render(this.store.getNodes(), this.store.getConnections());
     }
 
     _initExecutor() {
@@ -115,9 +98,9 @@ class WorkflowBuilder {
             onNotify: (msg) => this.snackbar.show(msg)
         });
 
-        // Mouse handler
+        // Mouse handler - use SVG element
         this.mouseHandler = new MouseHandler(
-            this.canvas,
+            this.renderer.svg,
             this.store,
             this.renderer,
             (x, y, node, connection, worldPos) => {
@@ -217,40 +200,8 @@ class WorkflowBuilder {
         // End node
         const end = this.store.addNode('end', startX, startY + 560);
 
-        // Create connections
-        // Constant A -> Calculate
-        this.store.addConnection(constA.id, 'output', calc.id, 'input');
-
-        // Constant B -> Calculate (need to go through constant A first to add B value)
-        // Actually, we need a different pattern - let's chain them
-        // For this demo, let's simplify:
-
-        // Start -> Gate (trigger)
-        this.store.addConnection(start.id, 'output', gate.id, 'trigger');
-
-        // Calculate -> Gate (data)
-        this.store.addConnection(calc.id, 'output', gate.id, 'data');
-
-        // Gate -> Delay
-        this.store.addConnection(gate.id, 'output', delay.id, 'input');
-
-        // Delay -> Log
-        this.store.addConnection(delay.id, 'output', log.id, 'input');
-
-        // Log -> End
-        this.store.addConnection(log.id, 'output', end.id, 'input');
-
-        // We need to chain the constants
-        // Actually, for the enrichment model to work, we need:
-        // Start -> ConstA -> ConstB -> Calculate -> Gate (data path)
-        // Let's fix this:
-
-        // Remove old connections and recreate properly
+        // Clear and create proper connections
         this.store.connections.clear();
-
-        // Create a proper flow:
-        // Start triggers the gate
-        // Constant A -> Constant B -> Calculate provides the data path
 
         // Data path: constA -> constB -> calc -> gate(data)
         this.store.addConnection(constA.id, 'output', constB.id, 'input');
@@ -271,10 +222,6 @@ class WorkflowBuilder {
             const vp = this.renderer.viewport;
             this.store.setViewport(vp.panX, vp.panY, vp.zoom);
         }, 100);
-    }
-
-    _startRenderLoop() {
-        this.renderer.startRenderLoop(() => this.store.getState());
     }
 }
 
