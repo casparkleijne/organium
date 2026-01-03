@@ -427,10 +427,11 @@ export class SvgRenderer extends EventEmitter {
         title.setAttribute('font-weight', '500');
         group.appendChild(title);
 
-        // Preview text
+        // Preview text (centered and bold)
         if (typeof node.getPreviewText === 'function') {
-            const preview = this.createText(14, headerHeight + 18, node.getPreviewText(), this.colors.onSurfaceVariant, '11px');
-            preview.setAttribute('text-anchor', 'start');
+            const preview = this.createText(w / 2, headerHeight + 18, node.getPreviewText(), this.colors.onSurfaceVariant, '11px');
+            preview.setAttribute('text-anchor', 'middle');
+            preview.setAttribute('font-weight', '600');
             group.appendChild(preview);
         }
 

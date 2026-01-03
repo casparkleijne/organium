@@ -222,12 +222,12 @@ export class NodeRenderer {
         ctx.textBaseline = 'middle';
         ctx.fillText(node.getDisplayTitle(), bounds.x + 32, iconY);
 
-        // Body content (preview text)
+        // Body content (preview text - centered and bold)
         if (typeof node.getPreviewText === 'function') {
             const preview = node.getPreviewText();
             ctx.fillStyle = this.onSurfaceVariant;
-            ctx.font = '400 12px Roboto';
-            ctx.textAlign = 'left';
+            ctx.font = '600 12px Roboto';
+            ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
 
             // Truncate if needed
@@ -240,7 +240,7 @@ export class NodeRenderer {
                 displayText += '...';
             }
 
-            ctx.fillText(displayText, bounds.x + 16, bounds.y + headerHeight + 12);
+            ctx.fillText(displayText, bounds.x + bounds.width / 2, bounds.y + headerHeight + 12);
         }
 
         // Delay progress bar (shows during 'waiting' state)
