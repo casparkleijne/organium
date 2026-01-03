@@ -58,8 +58,8 @@ export class NodeRenderer {
             ctx.shadowBlur = 12;
         }
 
-        // Active glow
-        if (node.runState === 'active') {
+        // Active/waiting glow
+        if (node.runState === 'active' || node.runState === 'waiting') {
             ctx.shadowColor = node.getColor();
             ctx.shadowBlur = 16 + Math.sin(Date.now() / 200) * 4;
         }
@@ -111,8 +111,8 @@ export class NodeRenderer {
             ctx.shadowBlur = 12;
         }
 
-        // Active glow
-        if (node.runState === 'active') {
+        // Active/waiting glow
+        if (node.runState === 'active' || node.runState === 'waiting') {
             ctx.shadowColor = color;
             ctx.shadowBlur = 16 + Math.sin(Date.now() / 200) * 4;
         }
@@ -171,8 +171,8 @@ export class NodeRenderer {
             ctx.shadowBlur = 12;
         }
 
-        // Active glow
-        if (node.runState === 'active') {
+        // Active/waiting glow
+        if (node.runState === 'active' || node.runState === 'waiting') {
             ctx.shadowColor = color;
             ctx.shadowBlur = 16 + Math.sin(Date.now() / 200) * 4;
         }
@@ -240,8 +240,8 @@ export class NodeRenderer {
             ctx.fillText(displayText, bounds.x + 16, bounds.y + headerHeight + 12);
         }
 
-        // Delay progress bar
-        if (node.getType() === 'delay' && node.runState === 'active' && node.progress > 0) {
+        // Delay progress bar (shows during 'waiting' state)
+        if (node.getType() === 'delay' && node.runState === 'waiting' && node.progress > 0) {
             const barY = bounds.y + bounds.height - 8;
             const barWidth = bounds.width - 32;
             const barX = bounds.x + 16;
