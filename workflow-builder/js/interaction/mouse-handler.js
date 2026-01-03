@@ -28,6 +28,10 @@ export class MouseHandler {
         this.canvas.addEventListener('wheel', this._onWheel.bind(this), { passive: false });
         this.canvas.addEventListener('contextmenu', this._onContextMenu.bind(this));
         this.canvas.addEventListener('dblclick', this._onDoubleClick.bind(this));
+
+        // Prevent native drag behavior
+        this.canvas.addEventListener('dragstart', (e) => e.preventDefault());
+        this.canvas.addEventListener('selectstart', (e) => e.preventDefault());
     }
 
     setSpaceDown(down) {
@@ -36,6 +40,9 @@ export class MouseHandler {
     }
 
     _onMouseDown(e) {
+        // Prevent text selection during any canvas interaction
+        e.preventDefault();
+
         const rect = this.canvas.getBoundingClientRect();
         const screenX = e.clientX - rect.left;
         const screenY = e.clientY - rect.top;
@@ -43,7 +50,6 @@ export class MouseHandler {
 
         // Middle mouse or space + left click = pan
         if (e.button === 1 || (e.button === 0 && this.spaceDown)) {
-            e.preventDefault();
             this.panZoomHandler.startPan(screenX, screenY);
             this.canvas.style.cursor = 'grabbing';
             return;

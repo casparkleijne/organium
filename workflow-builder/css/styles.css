@@ -230,6 +230,27 @@ body {
     right: 0;
     bottom: 0;
     background: var(--md-sys-color-background);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#canvas-container svg {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#canvas-container .node {
+    cursor: grab;
+}
+
+#canvas-container .node:active {
+    cursor: grabbing;
+}
+
+#canvas-container text {
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 /* Right Sidebar */
