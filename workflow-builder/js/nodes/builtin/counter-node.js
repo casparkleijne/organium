@@ -50,7 +50,7 @@ export class CounterNode extends DataNode {
 
     getPreviewText() {
         const name = this.properties.name || 'count';
-        const current = this._count !== null ? this._count : (this.properties.start ?? 1);
+        const current = this._count !== null ? this._count : 0;
         return `${name}: ${current}`;
     }
 }
