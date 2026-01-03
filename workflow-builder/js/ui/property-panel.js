@@ -248,6 +248,81 @@ export class PropertyPanel {
                 });
                 break;
 
+            case 'variable-select':
+                input = document.createElement('select');
+                input.className = 'variable-select';
+
+                // Get upstream variables
+                const upstreamVars = this.store.getUpstreamVariables(node.id);
+                const currentValue = node.properties[prop.key] || '';
+
+                // Add empty option
+                const emptyOpt = document.createElement('option');
+                emptyOpt.value = '';
+                emptyOpt.textContent = '-- Select variable --';
+                emptyOpt.selected = !currentValue;
+                input.appendChild(emptyOpt);
+
+                // Add upstream variables
+                upstreamVars.forEach(varName => {
+                    const option = document.createElement('option');
+                    option.value = varName;
+                    option.textContent = varName;
+                    option.selected = currentValue === varName;
+                    input.appendChild(option);
+                });
+
+                // If current value is not in the list, add it as custom
+                if (currentValue && !upstreamVars.includes(currentValue)) {
+                    const customOpt = document.createElement('option');
+                    customOpt.value = currentValue;
+                    customOpt.textContent = `${currentValue} (custom)`;
+                    customOpt.selected = true;
+                    input.appendChild(customOpt);
+                }
+
+                // Add divider and custom option
+                const dividerOpt = document.createElement('option');
+                dividerOpt.disabled = true;
+                dividerOpt.textContent = '────────────';
+                input.appendChild(dividerOpt);
+
+                const customOption = document.createElement('option');
+                customOption.value = '__custom__';
+                customOption.textContent = '+ Custom value...';
+                input.appendChild(customOption);
+
+                input.addEventListener('change', () => {
+                    if (input.value === '__custom__') {
+                        // Prompt for custom value
+                        const custom = prompt('Enter custom variable name:', currentValue);
+                        if (custom !== null && custom.trim()) {
+                            node.setProperty(prop.key, custom.trim());
+                            this.renderer.requestRender();
+                            this.render();
+                        } else {
+                            // Reset to previous value
+                            input.value = currentValue;
+                        }
+                    } else {
+                        node.setProperty(prop.key, input.value);
+                        this.renderer.requestRender();
+                    }
+                });
+
+                // Show indicator if no upstream vars
+                if (upstreamVars.length === 0) {
+                    const hint = document.createElement('span');
+                    hint.className = 'variable-hint';
+                    hint.textContent = 'No upstream variables found';
+                    field.appendChild(label);
+                    field.appendChild(input);
+                    field.appendChild(hint);
+                    input.className = 'property-input variable-select';
+                    return field;
+                }
+                break;
+
             default:
                 input = document.createElement('input');
                 input.type = 'text';

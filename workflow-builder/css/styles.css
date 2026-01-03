@@ -738,6 +738,25 @@ body {
     gap: var(--md-sys-spacing-2);
 }
 
+/* Variable Select */
+.variable-select {
+    background: var(--md-sys-color-surface-container);
+    border: 1px solid var(--md-sys-color-primary);
+}
+
+.variable-select option[disabled] {
+    color: var(--md-sys-color-outline);
+    font-size: 10px;
+}
+
+.variable-hint {
+    display: block;
+    font-size: 10px;
+    color: var(--md-sys-color-on-surface-variant);
+    font-style: italic;
+    margin-top: 4px;
+}
+
 /* JSON View */
 .json-view {
     background: var(--md-sys-color-surface-container-lowest);

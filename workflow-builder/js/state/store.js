@@ -127,6 +127,80 @@ export class Store extends EventEmitter {
         return result;
     }
 
+    /**
+     * Get all upstream nodes (nodes that feed into this node)
+     */
+    getUpstreamNodes(nodeId) {
+        const upstream = new Set();
+        const queue = [nodeId];
+        const visited = new Set();
+
+        while (queue.length > 0) {
+            const currentId = queue.shift();
+            if (visited.has(currentId)) continue;
+            visited.add(currentId);
+
+            const incomingConns = this.getConnectionsToNode(currentId);
+            for (const conn of incomingConns) {
+                if (!upstream.has(conn.fromNodeId)) {
+                    upstream.add(conn.fromNodeId);
+                    queue.push(conn.fromNodeId);
+                }
+            }
+        }
+
+        return Array.from(upstream).map(id => this.nodes.get(id)).filter(Boolean);
+    }
+
+    /**
+     * Get all variable names available at a node (from upstream nodes)
+     */
+    getUpstreamVariables(nodeId) {
+        const variables = [];
+        const upstreamNodes = this.getUpstreamNodes(nodeId);
+
+        for (const node of upstreamNodes) {
+            const outputVars = this._getNodeOutputVariables(node);
+            variables.push(...outputVars);
+        }
+
+        // Return unique variable names
+        return [...new Set(variables)];
+    }
+
+    /**
+     * Get variable names that a node outputs
+     */
+    _getNodeOutputVariables(node) {
+        const type = node.getType();
+        const vars = [];
+
+        switch (type) {
+            case 'constant':
+                vars.push(node.properties.name || 'value');
+                break;
+            case 'calculate':
+                vars.push(node.properties.outputKey || 'result');
+                break;
+            case 'start':
+                // Start node can have initial payload keys
+                if (node.properties.payload) {
+                    try {
+                        const payload = JSON.parse(node.properties.payload);
+                        vars.push(...Object.keys(payload));
+                    } catch (e) { /* ignore parse errors */ }
+                }
+                break;
+            default:
+                // Check if node has a getOutputVariables method
+                if (typeof node.getOutputVariables === 'function') {
+                    vars.push(...node.getOutputVariables());
+                }
+        }
+
+        return vars;
+    }
+
     // Selection operations
     selectNode(nodeId, addToSelection = false) {
         if (!addToSelection) {
