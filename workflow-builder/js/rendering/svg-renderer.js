@@ -38,6 +38,7 @@ export class SvgRenderer extends EventEmitter {
         this.hoveredPort = null;
         this.tempConnection = null;
         this.selectionBox = null;
+        this.insertTargetConnection = null;
 
         // Store reference for requestRender
         this._lastNodes = null;
@@ -388,12 +389,21 @@ export class SvgRenderer extends EventEmitter {
             this.connectionElements.set(conn.id, path);
         }
 
+        const isInsertTarget = this.insertTargetConnection &&
+                               this.insertTargetConnection.id === conn.id;
+
         const d = this.createBezierPath(fromPos, toPos);
         path.setAttribute('d', d);
         path.setAttribute('fill', 'none');
-        path.setAttribute('stroke', this.colors.primary);
-        path.setAttribute('stroke-width', '2');
+        path.setAttribute('stroke', isInsertTarget ? '#FFD54F' : this.colors.primary);
+        path.setAttribute('stroke-width', isInsertTarget ? '4' : '2');
         path.setAttribute('stroke-linecap', 'round');
+
+        if (isInsertTarget) {
+            path.setAttribute('stroke-dasharray', '8,4');
+        } else {
+            path.removeAttribute('stroke-dasharray');
+        }
     }
 
     createBezierPath(from, to) {
@@ -628,6 +638,10 @@ export class SvgRenderer extends EventEmitter {
 
     setHoveredConnection(conn) {
         // Could add hover styling here
+    }
+
+    setInsertTargetConnection(conn) {
+        this.insertTargetConnection = conn;
     }
 
     requestRender() {

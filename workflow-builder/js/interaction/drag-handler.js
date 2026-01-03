@@ -17,6 +17,9 @@ export class DragHandler {
 
         this.connectionStart = null; // {nodeId, portId, isInput, position}
         this.connectionEnd = null;
+
+        // For inserting nodes into connections
+        this.insertTargetConnection = null;
     }
 
     startNodeDrag(x, y, nodes) {
@@ -33,7 +36,7 @@ export class DragHandler {
         });
     }
 
-    updateNodeDrag(x, y) {
+    updateNodeDrag(x, y, hoveredConnection = null) {
         if (!this.isDragging) return;
 
         const settings = this.store.getSettings();
@@ -55,12 +58,56 @@ export class DragHandler {
             node.moveTo(newX, newY);
         });
 
+        // Check if we can insert into the hovered connection
+        if (hoveredConnection && this.canInsertIntoConnection(hoveredConnection)) {
+            this.insertTargetConnection = hoveredConnection;
+            this.renderer.setInsertTargetConnection(hoveredConnection);
+        } else {
+            this.insertTargetConnection = null;
+            this.renderer.setInsertTargetConnection(null);
+        }
+
         this.renderer.requestRender();
     }
 
+    canInsertIntoConnection(connection) {
+        // Only allow insertion when dragging a single node
+        if (this.dragOffsets.size !== 1) return false;
+
+        const nodeId = this.dragOffsets.keys().next().value;
+        const node = this.store.getNode(nodeId);
+        if (!node) return false;
+
+        // Node must have at least one input and one output port
+        const inputPorts = node.getInputPorts();
+        const outputPorts = node.getOutputPorts();
+        if (inputPorts.length === 0 || outputPorts.length === 0) return false;
+
+        // Can't insert into a connection that involves the dragged node
+        if (connection.fromNodeId === nodeId || connection.toNodeId === nodeId) return false;
+
+        return true;
+    }
+
     endNodeDrag() {
+        const insertTarget = this.insertTargetConnection;
+        const draggedNodeId = this.dragOffsets.size === 1
+            ? this.dragOffsets.keys().next().value
+            : null;
+
         this.isDragging = false;
         this.dragOffsets.clear();
+        this.insertTargetConnection = null;
+        this.renderer.setInsertTargetConnection(null);
+
+        // Return insert info if we were over a valid connection
+        if (insertTarget && draggedNodeId) {
+            return {
+                connection: insertTarget,
+                nodeId: draggedNodeId
+            };
+        }
+        return null;
     }
 
     startConnectionDrag(portInfo) {

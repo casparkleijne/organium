@@ -109,7 +109,13 @@ export class MouseHandler {
 
         // Handle node dragging
         if (this.dragHandler.isDragging) {
-            this.dragHandler.updateNodeDrag(world.x, world.y);
+            // Check if dragging over a connection for insertion
+            const connection = this.renderer.getConnectionAt(
+                world.x, world.y,
+                this.store.getConnections(),
+                this.store.getNodes()
+            );
+            this.dragHandler.updateNodeDrag(world.x, world.y, connection);
             return;
         }
 
@@ -176,7 +182,10 @@ export class MouseHandler {
 
         // End node dragging
         if (this.dragHandler.isDragging) {
-            this.dragHandler.endNodeDrag();
+            const insertInfo = this.dragHandler.endNodeDrag();
+            if (insertInfo) {
+                this._insertNodeIntoConnection(insertInfo.nodeId, insertInfo.connection);
+            }
             return;
         }
 
@@ -254,5 +263,28 @@ export class MouseHandler {
             node.toggleCollapsed();
             this.renderer.requestRender();
         }
+    }
+
+    _insertNodeIntoConnection(nodeId, connection) {
+        const node = this.store.getNode(nodeId);
+        if (!node) return;
+
+        // Get the first input and output ports
+        const inputPorts = node.getInputPorts();
+        const outputPorts = node.getOutputPorts();
+        if (inputPorts.length === 0 || outputPorts.length === 0) return;
+
+        const inputPortId = inputPorts[0].id;
+        const outputPortId = outputPorts[0].id;
+
+        // Store original connection info
+        const { fromNodeId, fromPortId, toNodeId, toPortId } = connection;
+
+        // Remove the original connection
+        this.store.removeConnection(connection.id);
+
+        // Create two new connections through the inserted node
+        this.store.addConnection(fromNodeId, fromPortId, nodeId, inputPortId);
+        this.store.addConnection(nodeId, outputPortId, toNodeId, toPortId);
     }
 }
