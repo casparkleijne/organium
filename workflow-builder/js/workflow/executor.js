@@ -75,6 +75,20 @@ export class Executor extends EventEmitter {
             }
         });
 
+        // Also start data source nodes (nodes with no incoming connections)
+        // These are typically Constant nodes that provide initial data
+        this.store.getNodes().forEach(node => {
+            const category = node.getCategory();
+            if (category === 'Data') {
+                const incomingConnections = this.store.getConnectionsToNode(node.id);
+                if (incomingConnections.length === 0) {
+                    // This is a data source node - auto-start it
+                    const message = new Message();
+                    this._processNode(node, message);
+                }
+            }
+        });
+
         this._startLoop();
     }
 

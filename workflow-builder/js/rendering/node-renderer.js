@@ -36,6 +36,7 @@ export class NodeRenderer {
         const radius = bounds.width / 2;
 
         ctx.save();
+        ctx.shadowBlur = 0; // Reset shadow state
 
         // Gradient fill
         const gradient = ctx.createRadialGradient(cx, cy - radius * 0.3, 0, cx, cy, radius);
@@ -104,6 +105,7 @@ export class NodeRenderer {
         const color = node.getColor();
 
         ctx.save();
+        ctx.shadowBlur = 0; // Reset shadow state
 
         // Selection glow
         if (node.selected) {
@@ -164,6 +166,7 @@ export class NodeRenderer {
         const headerHeight = 48;
 
         ctx.save();
+        ctx.shadowBlur = 0; // Reset shadow state
 
         // Selection glow
         if (node.selected) {
