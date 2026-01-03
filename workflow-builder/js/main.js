@@ -171,6 +171,24 @@ class WorkflowBuilder {
             this.renderer,
             this.mouseHandler.panZoomHandler
         );
+
+        // Sidebar toggles
+        this._initSidebarToggles();
+    }
+
+    _initSidebarToggles() {
+        const leftSidebar = document.getElementById('left-sidebar');
+        const rightSidebar = document.getElementById('right-sidebar');
+        const toggleLeft = document.getElementById('toggle-left');
+        const toggleRight = document.getElementById('toggle-right');
+
+        toggleLeft.addEventListener('click', () => {
+            leftSidebar.classList.toggle('collapsed');
+        });
+
+        toggleRight.addEventListener('click', () => {
+            rightSidebar.classList.toggle('collapsed');
+        });
     }
 
     _initDemoWorkflow() {

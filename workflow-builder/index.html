@@ -17,11 +17,14 @@
 <body>
     <div class="app-container">
         <!-- Left Sidebar -->
-        <aside class="left-sidebar">
+        <aside class="left-sidebar" id="left-sidebar">
+            <button class="sidebar-toggle sidebar-toggle-left" id="toggle-left" title="Toggle sidebar">
+                <span class="material-symbols-outlined">chevron_left</span>
+            </button>
             <div class="sidebar-header">
                 <h1>
                     <span class="material-symbols-outlined">account_tree</span>
-                    Workflow Builder
+                    <span class="sidebar-title-text">Workflow Builder</span>
                 </h1>
             </div>
             <div class="sidebar-content">
@@ -35,7 +38,7 @@
             <div id="canvas-container"></div>
 
             <!-- Version -->
-            <div id="version">v1.0.0</div>
+            <div id="version">v1.1.0</div>
 
             <!-- Run Controls -->
             <div id="run-controls"></div>
@@ -48,7 +51,10 @@
         </main>
 
         <!-- Right Sidebar -->
-        <aside class="right-sidebar">
+        <aside class="right-sidebar" id="right-sidebar">
+            <button class="sidebar-toggle sidebar-toggle-right" id="toggle-right" title="Toggle sidebar">
+                <span class="material-symbols-outlined">chevron_right</span>
+            </button>
             <div class="sidebar-title">Properties</div>
             <div id="properties"></div>
         </aside>

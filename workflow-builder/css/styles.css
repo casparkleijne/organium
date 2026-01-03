@@ -133,6 +133,22 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
+    transition: width var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-emphasized);
+}
+
+.left-sidebar.collapsed {
+    width: 48px;
+}
+
+.left-sidebar.collapsed .sidebar-header h1 .sidebar-title-text,
+.left-sidebar.collapsed .sidebar-content {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.left-sidebar.collapsed .sidebar-toggle-left .material-symbols-outlined {
+    transform: rotate(180deg);
 }
 
 .sidebar-header {
@@ -147,12 +163,56 @@ body {
     display: flex;
     align-items: center;
     gap: var(--md-sys-spacing-2);
+    white-space: nowrap;
+}
+
+.sidebar-header h1 .sidebar-title-text {
+    transition: opacity var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
 }
 
 .sidebar-content {
     flex: 1;
     overflow-y: auto;
     padding: var(--md-sys-spacing-3);
+    transition: opacity var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+/* Sidebar Toggle Buttons */
+.sidebar-toggle {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 48px;
+    border: none;
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface-variant);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: background var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+.sidebar-toggle:hover {
+    background: var(--md-sys-color-surface-container-highest);
+    color: var(--md-sys-color-on-surface);
+}
+
+.sidebar-toggle .material-symbols-outlined {
+    font-size: 18px;
+    transition: transform var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+.sidebar-toggle-left {
+    right: -12px;
+    border-radius: 0 var(--md-sys-shape-corner-small) var(--md-sys-shape-corner-small) 0;
+}
+
+.sidebar-toggle-right {
+    left: -12px;
+    border-radius: var(--md-sys-shape-corner-small) 0 0 var(--md-sys-shape-corner-small);
 }
 
 /* Canvas Area */
@@ -180,6 +240,22 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
+    transition: width var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-emphasized);
+}
+
+.right-sidebar.collapsed {
+    width: 48px;
+}
+
+.right-sidebar.collapsed .sidebar-title,
+.right-sidebar.collapsed #properties {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.right-sidebar.collapsed .sidebar-toggle-right .material-symbols-outlined {
+    transform: rotate(180deg);
 }
 
 .sidebar-title {
