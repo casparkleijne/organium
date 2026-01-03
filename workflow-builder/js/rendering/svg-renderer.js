@@ -39,6 +39,10 @@ export class SvgRenderer extends EventEmitter {
         this.tempConnection = null;
         this.selectionBox = null;
 
+        // Store reference for requestRender
+        this._lastNodes = null;
+        this._lastConnections = null;
+
         // Colors
         this.colors = {
             background: '#0E1514',
@@ -123,6 +127,10 @@ export class SvgRenderer extends EventEmitter {
     }
 
     render(nodes, connections) {
+        // Store for requestRender
+        this._lastNodes = nodes;
+        this._lastConnections = connections;
+
         this.renderConnections(connections, nodes);
         this.renderNodes(nodes);
         this.renderTempConnection();
@@ -624,8 +632,10 @@ export class SvgRenderer extends EventEmitter {
     }
 
     requestRender() {
-        // With SVG, we can render immediately since there's no animation frame needed
-        // This will be called by the store change listener
+        // Re-render with last known nodes/connections
+        if (this._lastNodes && this._lastConnections) {
+            this.render(this._lastNodes, this._lastConnections);
+        }
     }
 
     resize(width, height) {
