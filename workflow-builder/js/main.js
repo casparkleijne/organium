@@ -89,6 +89,11 @@ class WorkflowBuilder {
         this.store.on('viewportChanged', (viewport) => {
             this.renderer.setViewport(viewport.panX, viewport.panY, viewport.zoom);
         });
+
+        // Re-render when store changes (e.g., during workflow execution)
+        this.store.on('change', () => {
+            this.renderer.requestRender();
+        });
     }
 
     _initExecutor() {
