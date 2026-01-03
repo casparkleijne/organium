@@ -222,6 +222,37 @@ export class PropertyPanel {
                 });
                 break;
 
+            case 'range':
+                const rangeWrapper = document.createElement('div');
+                rangeWrapper.className = 'range-wrapper';
+
+                input = document.createElement('input');
+                input.type = 'range';
+                input.className = 'range-input';
+                input.value = node.properties[prop.key] ?? prop.defaultValue ?? 50;
+                input.min = prop.min ?? 0;
+                input.max = prop.max ?? 100;
+                input.step = prop.step ?? 1;
+
+                const rangeValue = document.createElement('span');
+                rangeValue.className = 'range-value';
+                rangeValue.textContent = input.value;
+
+                input.addEventListener('input', () => {
+                    rangeValue.textContent = input.value;
+                });
+
+                input.addEventListener('change', () => {
+                    node.setProperty(prop.key, parseInt(input.value, 10));
+                    this.renderer.requestRender();
+                });
+
+                rangeWrapper.appendChild(input);
+                rangeWrapper.appendChild(rangeValue);
+                field.appendChild(label);
+                field.appendChild(rangeWrapper);
+                return field;
+
             case 'boolean':
                 const toggle = document.createElement('div');
                 toggle.className = 'toggle-wrapper';

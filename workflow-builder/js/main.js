@@ -18,6 +18,7 @@ import './nodes/builtin/decision-node.js';
 import './nodes/builtin/splitter-node.js';
 import './nodes/builtin/await-all-node.js';
 import './nodes/builtin/gate-node.js';
+import './nodes/builtin/bell-node.js';
 
 // Import state
 import { Store } from './state/store.js';
