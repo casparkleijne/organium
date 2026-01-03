@@ -17,6 +17,7 @@ export class Executor extends EventEmitter {
         this.activeMessages = new Map();
         this.pendingDelays = new Map();
         this.schedulerIntervals = new Map();
+        this.pendingForwards = 0; // Track setTimeout forwards
 
         this.animationFrameId = null;
         this.lastUpdateTime = 0;
@@ -55,6 +56,7 @@ export class Executor extends EventEmitter {
         // Clear previous state
         this.activeMessages.clear();
         this.pendingDelays.clear();
+        this.pendingForwards = 0;
         this._clearSchedulers();
 
         this.status = 'running';
@@ -99,6 +101,7 @@ export class Executor extends EventEmitter {
         this._clearSchedulers();
         this.activeMessages.clear();
         this.pendingDelays.clear();
+        this.pendingForwards = 0;
 
         // Reset all nodes
         this.store.getNodes().forEach(node => node.resetRunState());
@@ -169,7 +172,8 @@ export class Executor extends EventEmitter {
         });
 
         // Check if workflow is complete
-        if (this.activeMessages.size === 0 && this.pendingDelays.size === 0 && this.schedulerIntervals.size === 0) {
+        if (this.activeMessages.size === 0 && this.pendingDelays.size === 0 &&
+            this.schedulerIntervals.size === 0 && this.pendingForwards === 0) {
             this._complete();
         }
 
@@ -271,8 +275,11 @@ export class Executor extends EventEmitter {
         relevantConnections.forEach(conn => {
             const targetNode = this.store.getNode(conn.toNodeId);
             if (targetNode) {
+                // Track pending forward
+                this.pendingForwards++;
                 // Small delay before activating next node for visual effect
                 setTimeout(() => {
+                    this.pendingForwards--;
                     if (this.status === 'running') {
                         this._processNode(targetNode, message);
                     }
@@ -290,7 +297,10 @@ export class Executor extends EventEmitter {
             const targetNode = this.store.getNode(conn.toNodeId);
 
             if (targetNode) {
+                // Track pending forward
+                this.pendingForwards++;
                 setTimeout(() => {
+                    this.pendingForwards--;
                     if (this.status === 'running') {
                         this._processNode(targetNode, forkedMessage);
                     }
