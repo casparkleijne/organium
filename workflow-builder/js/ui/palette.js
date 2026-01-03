@@ -27,7 +27,20 @@ export class Palette {
 
             const header = document.createElement('div');
             header.className = 'palette-section-header';
-            header.textContent = category.name;
+
+            const headerText = document.createElement('span');
+            headerText.textContent = category.name;
+            header.appendChild(headerText);
+
+            const collapseIcon = document.createElement('span');
+            collapseIcon.className = 'material-symbols-outlined collapse-icon';
+            collapseIcon.textContent = 'expand_more';
+            header.appendChild(collapseIcon);
+
+            header.addEventListener('click', () => {
+                section.classList.toggle('collapsed');
+            });
+
             section.appendChild(header);
 
             const items = document.createElement('div');

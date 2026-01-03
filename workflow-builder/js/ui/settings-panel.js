@@ -17,50 +17,65 @@ export class SettingsPanel {
 
         this.container.innerHTML = `
             <div class="settings-section">
-                <div class="settings-header">Settings</div>
-
-                <div class="setting-item">
-                    <label for="showGrid">Show grid</label>
-                    <div class="toggle-wrapper">
-                        <input type="checkbox" id="showGrid" ${settings.showGrid ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                    </div>
+                <div class="settings-header">
+                    <span>Settings</span>
+                    <span class="material-symbols-outlined collapse-icon">expand_more</span>
                 </div>
-
-                <div class="setting-item">
-                    <label for="snapToGrid">Snap to grid</label>
-                    <div class="toggle-wrapper">
-                        <input type="checkbox" id="snapToGrid" ${settings.snapToGrid ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
+                <div class="settings-content">
+                    <div class="setting-item">
+                        <label for="showGrid">Show grid</label>
+                        <div class="toggle-wrapper">
+                            <input type="checkbox" id="showGrid" ${settings.showGrid ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </div>
                     </div>
-                </div>
 
-                <div class="setting-item">
-                    <label for="gridSize">Grid size</label>
-                    <input type="range" id="gridSize" min="10" max="50" step="5" value="${settings.gridSize}">
-                    <span class="setting-value">${settings.gridSize}px</span>
+                    <div class="setting-item">
+                        <label for="snapToGrid">Snap to grid</label>
+                        <div class="toggle-wrapper">
+                            <input type="checkbox" id="snapToGrid" ${settings.snapToGrid ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="gridSize">Grid size</label>
+                        <input type="range" id="gridSize" min="10" max="50" step="5" value="${settings.gridSize}">
+                        <span class="setting-value">${settings.gridSize}px</span>
+                    </div>
                 </div>
             </div>
 
             <div class="settings-section">
-                <div class="settings-header">Actions</div>
-
-                <div class="settings-actions">
-                    <button class="btn btn-outlined" id="newBtn">
-                        <span class="material-symbols-outlined">add</span>
-                        New
-                    </button>
-                    <button class="btn btn-outlined" id="exportBtn">
-                        <span class="material-symbols-outlined">download</span>
-                        Export
-                    </button>
-                    <button class="btn btn-outlined" id="importBtn">
-                        <span class="material-symbols-outlined">upload</span>
-                        Import
-                    </button>
+                <div class="settings-header">
+                    <span>Actions</span>
+                    <span class="material-symbols-outlined collapse-icon">expand_more</span>
+                </div>
+                <div class="settings-content">
+                    <div class="settings-actions">
+                        <button class="btn btn-outlined" id="newBtn">
+                            <span class="material-symbols-outlined">add</span>
+                            New
+                        </button>
+                        <button class="btn btn-outlined" id="exportBtn">
+                            <span class="material-symbols-outlined">download</span>
+                            Export
+                        </button>
+                        <button class="btn btn-outlined" id="importBtn">
+                            <span class="material-symbols-outlined">upload</span>
+                            Import
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
+
+        // Add collapse handlers
+        this.container.querySelectorAll('.settings-header').forEach(header => {
+            header.addEventListener('click', () => {
+                header.parentElement.classList.toggle('collapsed');
+            });
+        });
 
         this._bindEvents();
     }

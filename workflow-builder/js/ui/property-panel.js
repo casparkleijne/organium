@@ -102,17 +102,12 @@ export class PropertyPanel {
         // Properties section
         const schema = node.constructor.propertySchema;
         if (schema.length > 0) {
-            const propsSection = document.createElement('div');
-            propsSection.className = 'property-section';
-
-            const propsHeader = document.createElement('div');
-            propsHeader.className = 'property-section-header';
-            propsHeader.textContent = 'Properties';
-            propsSection.appendChild(propsHeader);
+            const propsSection = this._createCollapsibleSection('Properties');
+            const propsContent = propsSection.querySelector('.property-section-content');
 
             schema.forEach(prop => {
                 const field = this._createPropertyField(node, prop);
-                propsSection.appendChild(field);
+                propsContent.appendChild(field);
             });
 
             this.container.appendChild(propsSection);
@@ -123,13 +118,8 @@ export class PropertyPanel {
         this.container.appendChild(connectionsSection);
 
         // Actions section
-        const actionsSection = document.createElement('div');
-        actionsSection.className = 'property-section';
-
-        const actionsHeader = document.createElement('div');
-        actionsHeader.className = 'property-section-header';
-        actionsHeader.textContent = 'Actions';
-        actionsSection.appendChild(actionsHeader);
+        const actionsSection = this._createCollapsibleSection('Actions');
+        const actionsContent = actionsSection.querySelector('.property-section-content');
 
         const actions = document.createElement('div');
         actions.className = 'property-actions';
@@ -146,9 +136,38 @@ export class PropertyPanel {
 
         actions.appendChild(duplicateBtn);
         actions.appendChild(deleteBtn);
-        actionsSection.appendChild(actions);
+        actionsContent.appendChild(actions);
 
         this.container.appendChild(actionsSection);
+    }
+
+    _createCollapsibleSection(title) {
+        const section = document.createElement('div');
+        section.className = 'property-section';
+
+        const header = document.createElement('div');
+        header.className = 'property-section-header';
+
+        const headerText = document.createElement('span');
+        headerText.textContent = title;
+        header.appendChild(headerText);
+
+        const collapseIcon = document.createElement('span');
+        collapseIcon.className = 'material-symbols-outlined collapse-icon';
+        collapseIcon.textContent = 'expand_more';
+        header.appendChild(collapseIcon);
+
+        header.addEventListener('click', () => {
+            section.classList.toggle('collapsed');
+        });
+
+        section.appendChild(header);
+
+        const content = document.createElement('div');
+        content.className = 'property-section-content';
+        section.appendChild(content);
+
+        return section;
     }
 
     _createPropertyField(node, prop) {
@@ -264,13 +283,8 @@ export class PropertyPanel {
     }
 
     _renderConnections(node) {
-        const section = document.createElement('div');
-        section.className = 'property-section';
-
-        const header = document.createElement('div');
-        header.className = 'property-section-header';
-        header.textContent = 'Connections';
-        section.appendChild(header);
+        const section = this._createCollapsibleSection('Connections');
+        const content = section.querySelector('.property-section-content');
 
         const incoming = this.store.getConnectionsToNode(node.id);
         const outgoing = this.store.getConnectionsFromNode(node.id);
@@ -279,7 +293,7 @@ export class PropertyPanel {
             const noConns = document.createElement('div');
             noConns.className = 'property-no-connections';
             noConns.textContent = 'No connections';
-            section.appendChild(noConns);
+            content.appendChild(noConns);
             return section;
         }
 
@@ -287,11 +301,11 @@ export class PropertyPanel {
             const inLabel = document.createElement('div');
             inLabel.className = 'connection-group-label';
             inLabel.textContent = 'Incoming';
-            section.appendChild(inLabel);
+            content.appendChild(inLabel);
 
             incoming.forEach(conn => {
                 const item = this._createConnectionItem(conn, true);
-                section.appendChild(item);
+                content.appendChild(item);
             });
         }
 
@@ -299,11 +313,11 @@ export class PropertyPanel {
             const outLabel = document.createElement('div');
             outLabel.className = 'connection-group-label';
             outLabel.textContent = 'Outgoing';
-            section.appendChild(outLabel);
+            content.appendChild(outLabel);
 
             outgoing.forEach(conn => {
                 const item = this._createConnectionItem(conn, false);
-                section.appendChild(item);
+                content.appendChild(item);
             });
         }
 
