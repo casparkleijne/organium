@@ -122,8 +122,8 @@ export class Store extends EventEmitter {
             }
         }
 
-        // Block shared input ports (except await-all)
-        if (toNode && toNode.getType() !== 'await-all') {
+        // Block shared input ports (except awaitall)
+        if (toNode && toNode.getType() !== 'awaitall') {
             for (const conn of this.connections.values()) {
                 if (conn.toNodeId === toNodeId && conn.toPortId === toPortId) {
                     return null; // Port already has a connection

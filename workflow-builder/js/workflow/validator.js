@@ -148,7 +148,7 @@ export class Validator {
             if (count > 1) {
                 const [nodeId, portId] = key.split(':');
                 const node = this.store.getNode(nodeId);
-                if (node && node.getType() !== 'await-all') {
+                if (node && node.getType() !== 'awaitall') {
                     errors.push({
                         type: 'error',
                         message: `Node '${node.getDisplayTitle()}' input port '${portId}' has multiple connections (${count})`,
