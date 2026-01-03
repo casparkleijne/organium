@@ -43,9 +43,31 @@ export class Store extends EventEmitter {
     addNode(type, x, y) {
         const node = NodeRegistry.create(type, x, y);
         this.nodes.set(node.id, node);
+
+        // Ensure unique variable names for nodes that output variables
+        this._ensureUniqueVariableNames(node);
+
         this.emit('nodeAdded', node);
         this.emit('change');
         return node;
+    }
+
+    /**
+     * Ensure a node's output variable names are unique
+     */
+    _ensureUniqueVariableNames(node) {
+        const type = node.getType();
+        if (type === 'constant' && node.properties.name) {
+            node.properties.name = this.generateUniqueVariableName(
+                node.properties.name,
+                node.id
+            );
+        } else if (type === 'calculate' && node.properties.outputKey) {
+            node.properties.outputKey = this.generateUniqueVariableName(
+                node.properties.outputKey,
+                node.id
+            );
+        }
     }
 
     removeNode(nodeId) {
@@ -199,6 +221,49 @@ export class Store extends EventEmitter {
         }
 
         return vars;
+    }
+
+    /**
+     * Get all variable names defined in the workflow
+     */
+    getAllVariableNames() {
+        const variables = new Map(); // name -> nodeId
+        for (const [nodeId, node] of this.nodes) {
+            const outputVars = this._getNodeOutputVariables(node);
+            for (const varName of outputVars) {
+                if (!variables.has(varName)) {
+                    variables.set(varName, nodeId);
+                }
+            }
+        }
+        return variables;
+    }
+
+    /**
+     * Check if a variable name is already used by another node
+     */
+    isVariableNameUsed(name, excludeNodeId = null) {
+        for (const [nodeId, node] of this.nodes) {
+            if (nodeId === excludeNodeId) continue;
+            const outputVars = this._getNodeOutputVariables(node);
+            if (outputVars.includes(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Generate a unique variable name by appending a number suffix
+     */
+    generateUniqueVariableName(baseName, excludeNodeId = null) {
+        let name = baseName;
+        let counter = 1;
+        while (this.isVariableNameUsed(name, excludeNodeId)) {
+            name = `${baseName}${counter}`;
+            counter++;
+        }
+        return name;
     }
 
     // Selection operations

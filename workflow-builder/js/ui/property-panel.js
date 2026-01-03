@@ -191,7 +191,20 @@ export class PropertyPanel {
                 input.value = node.properties[prop.key] || '';
                 input.placeholder = prop.placeholder || '';
                 input.addEventListener('change', () => {
-                    node.setProperty(prop.key, input.value);
+                    let value = input.value;
+                    // Check if this is a variable name property that needs uniqueness
+                    const isVariableNameProp =
+                        (node.getType() === 'constant' && prop.key === 'name') ||
+                        (node.getType() === 'calculate' && prop.key === 'outputKey');
+
+                    if (isVariableNameProp && value) {
+                        // Generate unique name if there's a conflict
+                        value = this.store.generateUniqueVariableName(value, node.id);
+                        if (value !== input.value) {
+                            input.value = value; // Update input to show the unique name
+                        }
+                    }
+                    node.setProperty(prop.key, value);
                     this.renderer.requestRender();
                 });
                 break;
