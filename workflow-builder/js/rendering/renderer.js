@@ -114,6 +114,10 @@ export class Renderer {
         const unselectedNodes = [];
         const selectedNodes = [];
         nodes.forEach(node => {
+            if (!node || typeof node.selected === 'undefined') {
+                console.warn('Invalid node in render:', node);
+                return;
+            }
             if (node.selected) {
                 selectedNodes.push(node);
             } else {
@@ -121,8 +125,20 @@ export class Renderer {
             }
         });
 
-        unselectedNodes.forEach(node => this.nodeRenderer.render(node, this.hoveredPort));
-        selectedNodes.forEach(node => this.nodeRenderer.render(node, this.hoveredPort));
+        unselectedNodes.forEach(node => {
+            try {
+                this.nodeRenderer.render(node, this.hoveredPort);
+            } catch (e) {
+                console.error('Error rendering node:', node.id, node.getType(), e);
+            }
+        });
+        selectedNodes.forEach(node => {
+            try {
+                this.nodeRenderer.render(node, this.hoveredPort);
+            } catch (e) {
+                console.error('Error rendering node:', node.id, node.getType(), e);
+            }
+        });
 
         ctx.restore();
 

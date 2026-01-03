@@ -64,6 +64,7 @@ export class Store extends EventEmitter {
         this.nodes.delete(nodeId);
         this.selection.nodeIds.delete(nodeId);
 
+        console.log('Node deleted:', nodeId, node.getType());
         this.emit('nodeRemoved', node);
         this.emit('change');
     }
