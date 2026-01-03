@@ -496,12 +496,10 @@ export class SvgRenderer extends EventEmitter {
 
     // Coordinate conversion
     screenToWorld(screenX, screenY) {
-        const rect = this.svg.getBoundingClientRect();
-        const x = screenX - rect.left;
-        const y = screenY - rect.top;
+        // screenX/screenY are already relative to the SVG element
         return {
-            x: (x - this.viewport.panX) / this.viewport.zoom,
-            y: (y - this.viewport.panY) / this.viewport.zoom
+            x: (screenX - this.viewport.panX) / this.viewport.zoom,
+            y: (screenY - this.viewport.panY) / this.viewport.zoom
         };
     }
 
