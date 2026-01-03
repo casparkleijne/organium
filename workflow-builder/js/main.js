@@ -198,60 +198,20 @@ class WorkflowBuilder {
     }
 
     _initDemoWorkflow() {
-        // Create demo workflow as per spec
-        const startX = 300;
+        // Create default workflow: Scheduler → Delay → Bell → End
+        const centerX = 300;
         const startY = 100;
+        const spacing = 100;
 
-        // Constant nodes (data providers)
-        const constA = this.store.addNode('constant', startX - 150, startY);
-        constA.setProperty('name', 'a');
-        constA.setProperty('dataType', 'number');
-        constA.setProperty('value', '5');
+        const schedulerNode = this.store.addNode('scheduler', centerX, startY);
+        const delayNode = this.store.addNode('delay', centerX, startY + spacing);
+        const bellNode = this.store.addNode('bell', centerX, startY + spacing * 2);
+        const endNode = this.store.addNode('end', centerX, startY + spacing * 3);
 
-        const constB = this.store.addNode('constant', startX + 150, startY);
-        constB.setProperty('name', 'b');
-        constB.setProperty('dataType', 'number');
-        constB.setProperty('value', '3');
-
-        // Calculate node
-        const calc = this.store.addNode('calculate', startX, startY + 120);
-        calc.setProperty('inputA', 'a');
-        calc.setProperty('inputB', 'b');
-        calc.setProperty('operator', '+');
-        calc.setProperty('outputKey', 'result');
-
-        // Start node
-        const start = this.store.addNode('start', startX - 200, startY + 240);
-
-        // Gate node
-        const gate = this.store.addNode('gate', startX, startY + 240);
-
-        // Delay node
-        const delay = this.store.addNode('delay', startX, startY + 360);
-        delay.setProperty('seconds', 2);
-
-        // Log node
-        const log = this.store.addNode('log', startX, startY + 460);
-        log.setProperty('watchKey', 'result');
-
-        // End node
-        const end = this.store.addNode('end', startX, startY + 560);
-
-        // Clear and create proper connections
-        this.store.connections.clear();
-
-        // Data path: constA -> constB -> calc -> gate(data)
-        this.store.addConnection(constA.id, 'output', constB.id, 'input');
-        this.store.addConnection(constB.id, 'output', calc.id, 'input');
-        this.store.addConnection(calc.id, 'output', gate.id, 'data');
-
-        // Trigger path: start -> gate(trigger)
-        this.store.addConnection(start.id, 'output', gate.id, 'trigger');
-
-        // Rest: gate -> delay -> log -> end
-        this.store.addConnection(gate.id, 'output', delay.id, 'input');
-        this.store.addConnection(delay.id, 'output', log.id, 'input');
-        this.store.addConnection(log.id, 'output', end.id, 'input');
+        // Connect them
+        this.store.addConnection(schedulerNode.id, 'output', delayNode.id, 'input');
+        this.store.addConnection(delayNode.id, 'output', bellNode.id, 'input');
+        this.store.addConnection(bellNode.id, 'output', endNode.id, 'input');
 
         // Fit to content
         setTimeout(() => {
