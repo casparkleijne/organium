@@ -117,6 +117,10 @@ export class PropertyPanel {
         const connectionsSection = this._renderConnections(node);
         this.container.appendChild(connectionsSection);
 
+        // JSON section
+        const jsonSection = this._renderJsonView(node);
+        this.container.appendChild(jsonSection);
+
         // Actions section
         const actionsSection = this._createCollapsibleSection('Actions');
         const actionsContent = actionsSection.querySelector('.property-section-content');
@@ -353,6 +357,22 @@ export class PropertyPanel {
         item.appendChild(deleteBtn);
 
         return item;
+    }
+
+    _renderJsonView(node) {
+        const section = this._createCollapsibleSection('JSON');
+        section.classList.add('collapsed'); // Start collapsed
+        const content = section.querySelector('.property-section-content');
+
+        const jsonData = node.serialize();
+        const formatted = JSON.stringify(jsonData, null, 2);
+
+        const pre = document.createElement('pre');
+        pre.className = 'json-view';
+        pre.textContent = formatted;
+
+        content.appendChild(pre);
+        return section;
     }
 
     _duplicateNode(node) {
