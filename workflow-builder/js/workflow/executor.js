@@ -272,7 +272,7 @@ export class Executor extends EventEmitter {
             if (result.outputPort) {
                 if (result.split) {
                     // Splitter node
-                    this._splitMessage(node, result.message);
+                    this._splitMessage(node, result.message, result.splitMode || 'all');
                 } else if (result.repeat) {
                     // Repeater node
                     this._repeatMessage(node, result.message, result.outputPort, result.repeat);
@@ -372,8 +372,52 @@ export class Executor extends EventEmitter {
         });
     }
 
-    _splitMessage(fromNode, message) {
+    _splitMessage(fromNode, message, mode = 'all') {
         const connections = this.store.getConnectionsFromNode(fromNode.id);
+
+        if (mode === 'random' && connections.length > 0) {
+            // Random mode: pick one random connection
+            const randomIndex = Math.floor(Math.random() * connections.length);
+            const conn = connections[randomIndex];
+            const targetNode = this.store.getNode(conn.toNodeId);
+
+            fromNode.setBranchCount(1);
+            fromNode.setSelectedBranch(randomIndex);
+
+            if (targetNode) {
+                this.pendingForwards++;
+
+                if (conn.setRunState) {
+                    conn.setRunState('active');
+                } else {
+                    conn.runState = 'active';
+                    conn.messageProgress = 0;
+                }
+                const animationDuration = 300 / this.speed;
+                this.activeConnectionAnimations.set(conn.id, {
+                    startTime: performance.now(),
+                    duration: animationDuration
+                });
+
+                setTimeout(() => {
+                    this.pendingForwards--;
+
+                    if (conn.setRunState) {
+                        conn.setRunState('completed');
+                    } else {
+                        conn.runState = 'completed';
+                    }
+                    this.activeConnectionAnimations.delete(conn.id);
+
+                    if (this.status === 'running') {
+                        this._processNode(targetNode, message.withPath(fromNode.id));
+                    }
+                }, animationDuration);
+            }
+            return;
+        }
+
+        // All mode: send to all connections
         fromNode.setBranchCount(connections.length);
 
         connections.forEach((conn, index) => {
