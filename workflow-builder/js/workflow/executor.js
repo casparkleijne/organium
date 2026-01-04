@@ -17,6 +17,10 @@ export class Executor extends EventEmitter {
         this.activeMessages = new Map();
         this.pendingDelays = new Map();
         this.schedulerIntervals = new Map();
+        this.pendingForwards = 0; // Track setTimeout forwards
+
+        // Active connection animations
+        this.activeConnectionAnimations = new Map(); // connId -> { startTime, duration }
 
         this.animationFrameId = null;
         this.lastUpdateTime = 0;
@@ -52,13 +56,26 @@ export class Executor extends EventEmitter {
         // Reset all nodes
         this.store.getNodes().forEach(node => node.resetRunState());
 
+        // Reset all connections
+        this.store.getConnections().forEach(conn => {
+            if (conn.resetRunState) {
+                conn.resetRunState();
+            } else {
+                conn.runState = 'idle';
+                conn.messageProgress = 0;
+            }
+        });
+
         // Clear previous state
         this.activeMessages.clear();
         this.pendingDelays.clear();
+        this.pendingForwards = 0;
+        this.activeConnectionAnimations.clear();
         this._clearSchedulers();
 
         this.status = 'running';
         this.store.setExecutionStatus('running');
+        this.emit('progressDimmingChanged', true);
         this.emit('started');
 
         // Start from all start/scheduler nodes
@@ -70,6 +87,20 @@ export class Executor extends EventEmitter {
                 this._processNode(node, message);
             } else if (type === 'scheduler') {
                 this._startScheduler(node);
+            }
+        });
+
+        // Also start data source nodes (nodes with no incoming connections)
+        // These are typically Constant nodes that provide initial data
+        this.store.getNodes().forEach(node => {
+            const category = node.getCategory();
+            if (category === 'Data') {
+                const incomingConnections = this.store.getConnectionsToNode(node.id);
+                if (incomingConnections.length === 0) {
+                    // This is a data source node - auto-start it
+                    const message = new Message();
+                    this._processNode(node, message);
+                }
             }
         });
 
@@ -99,10 +130,23 @@ export class Executor extends EventEmitter {
         this._clearSchedulers();
         this.activeMessages.clear();
         this.pendingDelays.clear();
+        this.pendingForwards = 0;
+        this.activeConnectionAnimations.clear();
 
         // Reset all nodes
         this.store.getNodes().forEach(node => node.resetRunState());
 
+        // Reset all connections
+        this.store.getConnections().forEach(conn => {
+            if (conn.resetRunState) {
+                conn.resetRunState();
+            } else {
+                conn.runState = 'idle';
+                conn.messageProgress = 0;
+            }
+        });
+
+        this.emit('progressDimmingChanged', false);
         this.emit('stopped');
     }
 
@@ -168,8 +212,19 @@ export class Executor extends EventEmitter {
             }
         });
 
+        // Update message dot animations
+        const now = performance.now();
+        this.activeConnectionAnimations.forEach((anim, connId) => {
+            const conn = this.store.getConnection(connId);
+            if (conn) {
+                const elapsed = now - anim.startTime;
+                conn.messageProgress = Math.min(elapsed / anim.duration, 1);
+            }
+        });
+
         // Check if workflow is complete
-        if (this.activeMessages.size === 0 && this.pendingDelays.size === 0 && this.schedulerIntervals.size === 0) {
+        if (this.activeMessages.size === 0 && this.pendingDelays.size === 0 &&
+            this.schedulerIntervals.size === 0 && this.pendingForwards === 0) {
             this._complete();
         }
 
@@ -214,6 +269,9 @@ export class Executor extends EventEmitter {
                 if (result.split) {
                     // Splitter node
                     this._splitMessage(node, result.message);
+                } else if (result.repeat) {
+                    // Repeater node
+                    this._repeatMessage(node, result.message, result.outputPort, result.repeat);
                 } else {
                     this._forwardMessage(node, result.message, result.outputPort);
                 }
@@ -271,12 +329,38 @@ export class Executor extends EventEmitter {
         relevantConnections.forEach(conn => {
             const targetNode = this.store.getNode(conn.toNodeId);
             if (targetNode) {
-                // Small delay before activating next node for visual effect
+                // Track pending forward
+                this.pendingForwards++;
+
+                // Activate connection for animation
+                if (conn.setRunState) {
+                    conn.setRunState('active');
+                } else {
+                    conn.runState = 'active';
+                    conn.messageProgress = 0;
+                }
+                const animationDuration = 300 / this.speed;
+                this.activeConnectionAnimations.set(conn.id, {
+                    startTime: performance.now(),
+                    duration: animationDuration
+                });
+
+                // Delay before activating next node (with message dot animation)
                 setTimeout(() => {
+                    this.pendingForwards--;
+
+                    // Mark connection as completed
+                    if (conn.setRunState) {
+                        conn.setRunState('completed');
+                    } else {
+                        conn.runState = 'completed';
+                    }
+                    this.activeConnectionAnimations.delete(conn.id);
+
                     if (this.status === 'running') {
                         this._processNode(targetNode, message);
                     }
-                }, 100 / this.speed);
+                }, animationDuration);
             }
         });
     }
@@ -290,13 +374,72 @@ export class Executor extends EventEmitter {
             const targetNode = this.store.getNode(conn.toNodeId);
 
             if (targetNode) {
+                // Track pending forward
+                this.pendingForwards++;
+
+                // Activate connection for animation
+                if (conn.setRunState) {
+                    conn.setRunState('active');
+                } else {
+                    conn.runState = 'active';
+                    conn.messageProgress = 0;
+                }
+                const animationDuration = 300 / this.speed;
+                this.activeConnectionAnimations.set(conn.id, {
+                    startTime: performance.now(),
+                    duration: animationDuration
+                });
+
                 setTimeout(() => {
+                    this.pendingForwards--;
+
+                    // Mark connection as completed
+                    if (conn.setRunState) {
+                        conn.setRunState('completed');
+                    } else {
+                        conn.runState = 'completed';
+                    }
+                    this.activeConnectionAnimations.delete(conn.id);
+
                     if (this.status === 'running') {
                         this._processNode(targetNode, forkedMessage);
                     }
-                }, 100 / this.speed);
+                }, animationDuration);
             }
         });
+    }
+
+    _repeatMessage(fromNode, message, outputPort, repeatConfig) {
+        const { count, delay } = repeatConfig;
+
+        const sendRepeat = (index) => {
+            if (index >= count || this.status !== 'running') return;
+
+            fromNode.setCurrentRepeat(index + 1);
+            fromNode.setRunState('active');
+            this.store.emit('change');
+
+            // Clone the message for each repeat
+            const repeatedMessage = message.fork(index, count);
+            this._forwardMessage(fromNode, repeatedMessage, outputPort);
+
+            // Schedule next repeat
+            if (index + 1 < count) {
+                this.pendingForwards++;
+                setTimeout(() => {
+                    this.pendingForwards--;
+                    sendRepeat(index + 1);
+                }, Math.max(delay, 100) / this.speed);
+            } else {
+                // All repeats done
+                setTimeout(() => {
+                    fromNode.setRunState('completed');
+                    this.store.emit('change');
+                }, 100 / this.speed);
+            }
+        };
+
+        sendRepeat(0);
     }
 
     _startScheduler(node) {
@@ -342,5 +485,24 @@ export class Executor extends EventEmitter {
         this.store.setExecutionStatus('completed');
         this._stopLoop();
         this.emit('completed');
+
+        // Keep completed states visible for 3 seconds, then fade out
+        setTimeout(() => {
+            if (this.status === 'completed') {
+                this.emit('progressDimmingChanged', false);
+
+                // Reset node and connection states
+                this.store.getNodes().forEach(node => node.resetRunState());
+                this.store.getConnections().forEach(conn => {
+                    if (conn.resetRunState) {
+                        conn.resetRunState();
+                    } else {
+                        conn.runState = 'idle';
+                        conn.messageProgress = 0;
+                    }
+                });
+                this.store.emit('change');
+            }
+        }, 3000);
     }
 }

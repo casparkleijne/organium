@@ -43,9 +43,36 @@ export class Store extends EventEmitter {
     addNode(type, x, y) {
         const node = NodeRegistry.create(type, x, y);
         this.nodes.set(node.id, node);
+
+        // Ensure unique variable names for nodes that output variables
+        this._ensureUniqueVariableNames(node);
+
         this.emit('nodeAdded', node);
         this.emit('change');
         return node;
+    }
+
+    /**
+     * Ensure a node's output variable names are unique
+     */
+    _ensureUniqueVariableNames(node) {
+        const type = node.getType();
+        if (type === 'constant' && node.properties.name) {
+            node.properties.name = this.generateUniqueVariableName(
+                node.properties.name,
+                node.id
+            );
+        } else if (type === 'calculate' && node.properties.outputKey) {
+            node.properties.outputKey = this.generateUniqueVariableName(
+                node.properties.outputKey,
+                node.id
+            );
+        } else if (type === 'counter' && node.properties.name) {
+            node.properties.name = this.generateUniqueVariableName(
+                node.properties.name,
+                node.id
+            );
+        }
     }
 
     removeNode(nodeId) {
@@ -64,6 +91,7 @@ export class Store extends EventEmitter {
         this.nodes.delete(nodeId);
         this.selection.nodeIds.delete(nodeId);
 
+        console.log('Node deleted:', nodeId, node.getType());
         this.emit('nodeRemoved', node);
         this.emit('change');
     }
@@ -83,6 +111,28 @@ export class Store extends EventEmitter {
             if (conn.fromNodeId === fromNodeId && conn.fromPortId === fromPortId &&
                 conn.toNodeId === toNodeId && conn.toPortId === toPortId) {
                 return null;
+            }
+        }
+
+        // Check for shared port violations
+        const fromNode = this.getNode(fromNodeId);
+        const toNode = this.getNode(toNodeId);
+
+        // Block shared output ports (except splitter)
+        if (fromNode && fromNode.getType() !== 'splitter') {
+            for (const conn of this.connections.values()) {
+                if (conn.fromNodeId === fromNodeId && conn.fromPortId === fromPortId) {
+                    return null; // Port already has a connection
+                }
+            }
+        }
+
+        // Block shared input ports (except awaitall)
+        if (toNode && toNode.getType() !== 'awaitall') {
+            for (const conn of this.connections.values()) {
+                if (conn.toNodeId === toNodeId && conn.toPortId === toPortId) {
+                    return null; // Port already has a connection
+                }
             }
         }
 
@@ -124,6 +174,126 @@ export class Store extends EventEmitter {
             if (conn.toNodeId === nodeId) result.push(conn);
         });
         return result;
+    }
+
+    /**
+     * Get all upstream nodes (nodes that feed into this node)
+     */
+    getUpstreamNodes(nodeId) {
+        const upstream = new Set();
+        const queue = [nodeId];
+        const visited = new Set();
+
+        while (queue.length > 0) {
+            const currentId = queue.shift();
+            if (visited.has(currentId)) continue;
+            visited.add(currentId);
+
+            const incomingConns = this.getConnectionsToNode(currentId);
+            for (const conn of incomingConns) {
+                if (!upstream.has(conn.fromNodeId)) {
+                    upstream.add(conn.fromNodeId);
+                    queue.push(conn.fromNodeId);
+                }
+            }
+        }
+
+        return Array.from(upstream).map(id => this.nodes.get(id)).filter(Boolean);
+    }
+
+    /**
+     * Get all variable names available at a node (from upstream nodes)
+     */
+    getUpstreamVariables(nodeId) {
+        const variables = [];
+        const upstreamNodes = this.getUpstreamNodes(nodeId);
+
+        for (const node of upstreamNodes) {
+            const outputVars = this._getNodeOutputVariables(node);
+            variables.push(...outputVars);
+        }
+
+        // Return unique variable names
+        return [...new Set(variables)];
+    }
+
+    /**
+     * Get variable names that a node outputs
+     */
+    _getNodeOutputVariables(node) {
+        const type = node.getType();
+        const vars = [];
+
+        switch (type) {
+            case 'constant':
+                vars.push(node.properties.name || 'value');
+                break;
+            case 'calculate':
+                vars.push(node.properties.outputKey || 'result');
+                break;
+            case 'counter':
+                vars.push(node.properties.name || 'count');
+                break;
+            case 'start':
+                // Start node can have initial payload keys
+                if (node.properties.payload) {
+                    try {
+                        const payload = JSON.parse(node.properties.payload);
+                        vars.push(...Object.keys(payload));
+                    } catch (e) { /* ignore parse errors */ }
+                }
+                break;
+            default:
+                // Check if node has a getOutputVariables method
+                if (typeof node.getOutputVariables === 'function') {
+                    vars.push(...node.getOutputVariables());
+                }
+        }
+
+        return vars;
+    }
+
+    /**
+     * Get all variable names defined in the workflow
+     */
+    getAllVariableNames() {
+        const variables = new Map(); // name -> nodeId
+        for (const [nodeId, node] of this.nodes) {
+            const outputVars = this._getNodeOutputVariables(node);
+            for (const varName of outputVars) {
+                if (!variables.has(varName)) {
+                    variables.set(varName, nodeId);
+                }
+            }
+        }
+        return variables;
+    }
+
+    /**
+     * Check if a variable name is already used by another node
+     */
+    isVariableNameUsed(name, excludeNodeId = null) {
+        for (const [nodeId, node] of this.nodes) {
+            if (nodeId === excludeNodeId) continue;
+            const outputVars = this._getNodeOutputVariables(node);
+            if (outputVars.includes(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Generate a unique variable name by appending a number suffix
+     */
+    generateUniqueVariableName(baseName, excludeNodeId = null) {
+        let name = baseName;
+        let counter = 1;
+        while (this.isVariableNameUsed(name, excludeNodeId)) {
+            name = `${baseName}${counter}`;
+            counter++;
+        }
+        return name;
     }
 
     // Selection operations

@@ -10,7 +10,7 @@ export class SchedulerNode extends BaseNode {
     static category = 'Flow Control';
     static displayName = 'Scheduler';
     static icon = 'update';
-    static color = '#D0BCFF';
+    static color = '#66BB6A'; // Light green - recurring trigger
 
     static propertySchema = [
         { key: 'interval', type: 'number', label: 'Interval (seconds)', defaultValue: 5, min: 0.1, step: 0.1 },
@@ -54,6 +54,21 @@ export class SchedulerNode extends BaseNode {
     resetRunState() {
         super.resetRunState();
         this.runCount = 0;
+    }
+
+    getPreviewText() {
+        const interval = this.properties.interval || 5;
+        const repeats = this.properties.repeats ?? -1;
+
+        let text = `${interval}s`;
+
+        if (repeats === -1) {
+            text += ' ∞';
+        } else {
+            text += ` (${this.runCount}/${repeats})`;
+        }
+
+        return text;
     }
 }
 

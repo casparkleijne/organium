@@ -10,7 +10,7 @@ export class StartNode extends BaseNode {
     static category = 'Flow Control';
     static displayName = 'Start';
     static icon = 'play_arrow';
-    static color = '#91C6BC';
+    static color = '#4CAF50'; // Green - "go"
 
     static propertySchema = [];
     static inputPorts = [];

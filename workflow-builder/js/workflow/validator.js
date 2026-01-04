@@ -12,27 +12,62 @@ export class Validator {
         const nodes = this.store.getNodes();
         const connections = this.store.getConnections();
 
-        // Check for start/scheduler node
-        const startNodes = [];
+        // Count start, scheduler, and end nodes
+        let startCount = 0;
+        let schedulerCount = 0;
+        let endCount = 0;
+
         nodes.forEach(node => {
-            if (node.getType() === 'start' || node.getType() === 'scheduler') {
-                startNodes.push(node);
-            }
+            const type = node.getType();
+            if (type === 'start') startCount++;
+            if (type === 'scheduler') schedulerCount++;
+            if (type === 'end') endCount++;
         });
 
-        if (startNodes.length === 0) {
+        // Must have exactly 1 start OR 1 scheduler (not both, not zero)
+        const entryCount = startCount + schedulerCount;
+        if (entryCount === 0) {
             errors.push({
                 type: 'error',
-                message: 'Workflow must have a Start or Scheduler node',
+                message: 'Workflow must have exactly 1 Start or Scheduler node',
+                nodeId: null
+            });
+        } else if (entryCount > 1) {
+            errors.push({
+                type: 'error',
+                message: `Workflow must have exactly 1 Start or Scheduler node (found ${startCount} Start, ${schedulerCount} Scheduler)`,
                 nodeId: null
             });
         }
 
-        // Check each node
+        // Must have exactly 1 end node
+        if (endCount === 0) {
+            errors.push({
+                type: 'error',
+                message: 'Workflow must have exactly 1 End node',
+                nodeId: null
+            });
+        } else if (endCount > 1) {
+            errors.push({
+                type: 'error',
+                message: `Workflow must have exactly 1 End node (found ${endCount})`,
+                nodeId: null
+            });
+        }
+
+        // Check each node for required connections
         nodes.forEach(node => {
             const nodeErrors = this._validateNode(node, connections);
             errors.push(...nodeErrors);
         });
+
+        // Check for shared ports (only splitter output and await-all input allowed)
+        const sharedPortErrors = this._validateSharedPorts(nodes, connections);
+        errors.push(...sharedPortErrors);
+
+        // Check timer/delay intervals
+        const timerErrors = this._validateTimerIntervals(nodes, connections);
+        errors.push(...timerErrors);
 
         // Check for cycles (optional, workflows might allow them)
         // const cycleError = this._checkForCycles(nodes, connections);
@@ -60,63 +95,157 @@ export class Validator {
         // Nodes that don't need inputs
         const noInputRequired = ['start', 'scheduler', 'constant'];
 
-        // Check input ports
+        // Check input ports - ALL inputs must be connected
         const inputPorts = node.getInputPorts();
         if (inputPorts.length > 0 && !noInputRequired.includes(type)) {
             inputPorts.forEach(port => {
                 const hasConnection = incoming.some(c => c.toPortId === port.id);
                 if (!hasConnection) {
-                    // For gate, both inputs are required
-                    if (type === 'gate') {
-                        errors.push({
-                            type: 'error',
-                            message: `Gate '${title}' requires both Trigger and Data inputs`,
-                            nodeId: node.id
-                        });
-                    } else if (type === 'awaitall') {
-                        // AwaitAll needs at least one input
-                        if (incoming.length === 0) {
-                            errors.push({
-                                type: 'warning',
-                                message: `Await All '${title}' has no incoming connections`,
-                                nodeId: node.id
-                            });
-                        }
-                    } else if (type !== 'constant') {
-                        errors.push({
-                            type: 'warning',
-                            message: `Node '${title}' has unconnected input`,
-                            nodeId: node.id
-                        });
-                    }
+                    errors.push({
+                        type: 'error',
+                        message: `Node '${title}' has unconnected input port '${port.label || port.id}'`,
+                        nodeId: node.id
+                    });
                 }
             });
         }
 
-        // Check output ports (except end nodes)
+        // Check output ports - ALL outputs must be connected (except end nodes)
         const outputPorts = node.getOutputPorts();
-        if (outputPorts.length > 0) {
-            // Decision nodes need both outputs connected
-            if (type === 'decision') {
-                const hasYes = outgoing.some(c => c.fromPortId === 'yes');
-                const hasNo = outgoing.some(c => c.fromPortId === 'no');
-                if (!hasYes || !hasNo) {
+        if (outputPorts.length > 0 && type !== 'end') {
+            outputPorts.forEach(port => {
+                const hasConnection = outgoing.some(c => c.fromPortId === port.id);
+                if (!hasConnection) {
                     errors.push({
-                        type: 'warning',
-                        message: `Decision '${title}' should have both Yes and No outputs connected`,
+                        type: 'error',
+                        message: `Node '${title}' has unconnected output port '${port.label || port.id}'`,
                         nodeId: node.id
                     });
                 }
-            } else if (outgoing.length === 0 && type !== 'end') {
-                errors.push({
-                    type: 'warning',
-                    message: `Node '${title}' has no outgoing connections`,
-                    nodeId: node.id
-                });
-            }
+            });
         }
 
         return errors;
+    }
+
+    _validateSharedPorts(nodes, connections) {
+        const errors = [];
+
+        // Build maps of connections per port
+        const inputPortConnections = new Map(); // "nodeId:portId" -> count
+        const outputPortConnections = new Map(); // "nodeId:portId" -> count
+
+        connections.forEach(conn => {
+            const inputKey = `${conn.toNodeId}:${conn.toPortId}`;
+            const outputKey = `${conn.fromNodeId}:${conn.fromPortId}`;
+
+            inputPortConnections.set(inputKey, (inputPortConnections.get(inputKey) || 0) + 1);
+            outputPortConnections.set(outputKey, (outputPortConnections.get(outputKey) || 0) + 1);
+        });
+
+        // Check for shared input ports (only await-all allowed)
+        inputPortConnections.forEach((count, key) => {
+            if (count > 1) {
+                const [nodeId, portId] = key.split(':');
+                const node = this.store.getNode(nodeId);
+                if (node && node.getType() !== 'awaitall') {
+                    errors.push({
+                        type: 'error',
+                        message: `Node '${node.getDisplayTitle()}' input port '${portId}' has multiple connections (${count})`,
+                        nodeId: nodeId
+                    });
+                }
+            }
+        });
+
+        // Check for shared output ports (only splitter allowed)
+        outputPortConnections.forEach((count, key) => {
+            if (count > 1) {
+                const [nodeId, portId] = key.split(':');
+                const node = this.store.getNode(nodeId);
+                if (node && node.getType() !== 'splitter') {
+                    errors.push({
+                        type: 'error',
+                        message: `Node '${node.getDisplayTitle()}' output port '${portId}' has multiple connections (${count})`,
+                        nodeId: nodeId
+                    });
+                }
+            }
+        });
+
+        return errors;
+    }
+
+    _validateTimerIntervals(nodes, connections) {
+        const errors = [];
+
+        // Build adjacency map for quick lookup
+        const outgoingMap = new Map();
+        connections.forEach(conn => {
+            if (!outgoingMap.has(conn.fromNodeId)) {
+                outgoingMap.set(conn.fromNodeId, []);
+            }
+            outgoingMap.get(conn.fromNodeId).push(conn.toNodeId);
+        });
+
+        // Find all scheduler nodes
+        const schedulers = [];
+        nodes.forEach(node => {
+            if (node.getType() === 'scheduler') {
+                schedulers.push(node);
+            }
+        });
+
+        // For each scheduler, calculate max path time
+        schedulers.forEach(scheduler => {
+            const intervalMs = (scheduler.properties.interval || 5) * 1000;
+            const maxPathTime = this._calculateMaxPathTime(scheduler.id, outgoingMap, new Set());
+
+            if (maxPathTime > intervalMs) {
+                const intervalSec = intervalMs / 1000;
+                const pathSec = (maxPathTime / 1000).toFixed(1);
+                errors.push({
+                    type: 'warning',
+                    message: `Path from '${scheduler.getDisplayTitle()}' takes ${pathSec}s but interval is ${intervalSec}s - messages may pile up`,
+                    nodeId: scheduler.id
+                });
+            }
+        });
+
+        return errors;
+    }
+
+    _calculateMaxPathTime(nodeId, outgoingMap, visited) {
+        if (visited.has(nodeId)) return 0; // Cycle protection
+        visited.add(nodeId);
+
+        const node = this.store.getNode(nodeId);
+        if (!node) return 0;
+
+        // Calculate time contribution of this node
+        let nodeTime = 0;
+        const type = node.getType();
+
+        if (type === 'delay') {
+            nodeTime = (node.properties.seconds || 1) * 1000;
+        } else if (type === 'repeater') {
+            const count = node.properties.count || 3;
+            const delay = node.properties.delay || 0;
+            // Time = (count - 1) * delay (first one is immediate, then delay between each)
+            // Plus minimum 100ms between repeats enforced by executor
+            nodeTime = (count - 1) * Math.max(delay, 100);
+        }
+
+        // Get max time of all downstream paths
+        const children = outgoingMap.get(nodeId) || [];
+        let maxChildTime = 0;
+
+        children.forEach(childId => {
+            const childTime = this._calculateMaxPathTime(childId, outgoingMap, new Set(visited));
+            maxChildTime = Math.max(maxChildTime, childTime);
+        });
+
+        return nodeTime + maxChildTime;
     }
 
     _checkForCycles(nodes, connections) {

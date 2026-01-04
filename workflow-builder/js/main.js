@@ -17,13 +17,15 @@ import './nodes/builtin/calculate-node.js';
 import './nodes/builtin/decision-node.js';
 import './nodes/builtin/splitter-node.js';
 import './nodes/builtin/await-all-node.js';
-import './nodes/builtin/gate-node.js';
+import './nodes/builtin/bell-node.js';
+import './nodes/builtin/counter-node.js';
+import './nodes/builtin/repeater-node.js';
 
 // Import state
 import { Store } from './state/store.js';
 
 // Import rendering
-import { Renderer } from './rendering/renderer.js';
+import { SvgRenderer } from './rendering/svg-renderer.js';
 
 // Import interactions
 import { MouseHandler } from './interaction/mouse-handler.js';
@@ -40,72 +42,78 @@ import { Snackbar } from './ui/snackbar.js';
 import { RunControls } from './ui/run-controls.js';
 import { CanvasControls } from './ui/canvas-controls.js';
 import { SettingsPanel } from './ui/settings-panel.js';
+import { ValidationPanel } from './ui/validation-panel.js';
 
 class WorkflowBuilder {
     constructor() {
         this.store = new Store();
         this.snackbar = new Snackbar();
 
-        this._initCanvas();
         this._initRenderer();
+        this._initValidationPanel();
         this._initExecutor();
         this._initInteractions();
         this._initUI();
         this._initDemoWorkflow();
-        this._startRenderLoop();
 
         console.log('Workflow Builder initialized');
         console.log('Registered node types:', NodeRegistry.getAllTypes().map(t => t.type));
     }
 
-    _initCanvas() {
-        this.canvas = document.getElementById('canvas');
-        this.minimapCanvas = document.getElementById('minimap');
-
-        // Set canvas size
-        this._resizeCanvas();
-        window.addEventListener('resize', () => this._resizeCanvas());
-    }
-
-    _resizeCanvas() {
-        const container = this.canvas.parentElement;
-        this.canvas.width = container.clientWidth;
-        this.canvas.height = container.clientHeight;
-
-        if (this.renderer) {
-            this.renderer.resize(this.canvas.width, this.canvas.height);
-        }
-    }
-
     _initRenderer() {
-        this.renderer = new Renderer(this.canvas, this.minimapCanvas);
+        const container = document.getElementById('canvas-container');
+        this.renderer = new SvgRenderer(container);
 
         // Apply initial settings
         const settings = this.store.getSettings();
         this.renderer.setGridSettings(settings.showGrid, settings.gridSize);
         this.renderer.setViewport(100, 100, 1);
 
+        // Apply theme
+        const isDark = settings.darkTheme !== false;
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        this.renderer.setTheme(isDark ? 'dark' : 'light');
+
         // Sync viewport changes
         this.store.on('viewportChanged', (viewport) => {
             this.renderer.setViewport(viewport.panX, viewport.panY, viewport.zoom);
         });
 
-        // Re-render when store changes (e.g., during workflow execution)
+        // Re-render when store changes
         this.store.on('change', () => {
-            this.renderer.requestRender();
+            this.renderer.render(this.store.getNodes(), this.store.getConnections());
         });
+
+        // Initial render
+        this.renderer.render(this.store.getNodes(), this.store.getConnections());
+    }
+
+    _initValidationPanel() {
+        this.validationPanel = new ValidationPanel(
+            document.getElementById('validation-panel'),
+            this.store,
+            this.renderer
+        );
     }
 
     _initExecutor() {
         this.executor = new Executor(this.store);
 
         this.executor.on('validationError', (errors) => {
-            const errorMsg = errors.find(e => e.type === 'error');
-            this.snackbar.show(errorMsg ? errorMsg.message : 'Validation failed');
+            this.validationPanel.show(errors);
+        });
+
+        this.executor.on('started', () => {
+            this.validationPanel.hide();
         });
 
         this.executor.on('completed', () => {
             this.snackbar.show('Workflow completed');
+        });
+
+        // Progress dimming integration
+        this.executor.on('progressDimmingChanged', (enabled) => {
+            this.renderer.setProgressDimming(enabled);
         });
     }
 
@@ -115,9 +123,9 @@ class WorkflowBuilder {
             onNotify: (msg) => this.snackbar.show(msg)
         });
 
-        // Mouse handler
+        // Mouse handler - use SVG element
         this.mouseHandler = new MouseHandler(
-            this.canvas,
+            this.renderer.svg,
             this.store,
             this.renderer,
             (x, y, node, connection, worldPos) => {
@@ -175,95 +183,41 @@ class WorkflowBuilder {
             this.renderer,
             this.mouseHandler.panZoomHandler
         );
+
+        // Sidebar toggles
+        this._initSidebarToggles();
+    }
+
+    _initSidebarToggles() {
+        const leftSidebar = document.getElementById('left-sidebar');
+        const rightSidebar = document.getElementById('right-sidebar');
+        const toggleLeft = document.getElementById('toggle-left');
+        const toggleRight = document.getElementById('toggle-right');
+
+        toggleLeft.addEventListener('click', () => {
+            leftSidebar.classList.toggle('collapsed');
+        });
+
+        toggleRight.addEventListener('click', () => {
+            rightSidebar.classList.toggle('collapsed');
+        });
     }
 
     _initDemoWorkflow() {
-        // Create demo workflow as per spec
-        const startX = 300;
+        // Create default workflow: Scheduler → Delay → Bell → End
+        const centerX = 300;
         const startY = 100;
+        const spacing = 100;
 
-        // Constant nodes (data providers)
-        const constA = this.store.addNode('constant', startX - 150, startY);
-        constA.setProperty('name', 'a');
-        constA.setProperty('dataType', 'number');
-        constA.setProperty('value', '5');
+        const schedulerNode = this.store.addNode('scheduler', centerX, startY);
+        const delayNode = this.store.addNode('delay', centerX, startY + spacing);
+        const bellNode = this.store.addNode('bell', centerX, startY + spacing * 2);
+        const endNode = this.store.addNode('end', centerX, startY + spacing * 3);
 
-        const constB = this.store.addNode('constant', startX + 150, startY);
-        constB.setProperty('name', 'b');
-        constB.setProperty('dataType', 'number');
-        constB.setProperty('value', '3');
-
-        // Calculate node
-        const calc = this.store.addNode('calculate', startX, startY + 120);
-        calc.setProperty('inputA', 'a');
-        calc.setProperty('inputB', 'b');
-        calc.setProperty('operator', '+');
-        calc.setProperty('outputKey', 'result');
-
-        // Start node
-        const start = this.store.addNode('start', startX - 200, startY + 240);
-
-        // Gate node
-        const gate = this.store.addNode('gate', startX, startY + 240);
-
-        // Delay node
-        const delay = this.store.addNode('delay', startX, startY + 360);
-        delay.setProperty('seconds', 2);
-
-        // Log node
-        const log = this.store.addNode('log', startX, startY + 460);
-        log.setProperty('watchKey', 'result');
-
-        // End node
-        const end = this.store.addNode('end', startX, startY + 560);
-
-        // Create connections
-        // Constant A -> Calculate
-        this.store.addConnection(constA.id, 'output', calc.id, 'input');
-
-        // Constant B -> Calculate (need to go through constant A first to add B value)
-        // Actually, we need a different pattern - let's chain them
-        // For this demo, let's simplify:
-
-        // Start -> Gate (trigger)
-        this.store.addConnection(start.id, 'output', gate.id, 'trigger');
-
-        // Calculate -> Gate (data)
-        this.store.addConnection(calc.id, 'output', gate.id, 'data');
-
-        // Gate -> Delay
-        this.store.addConnection(gate.id, 'output', delay.id, 'input');
-
-        // Delay -> Log
-        this.store.addConnection(delay.id, 'output', log.id, 'input');
-
-        // Log -> End
-        this.store.addConnection(log.id, 'output', end.id, 'input');
-
-        // We need to chain the constants
-        // Actually, for the enrichment model to work, we need:
-        // Start -> ConstA -> ConstB -> Calculate -> Gate (data path)
-        // Let's fix this:
-
-        // Remove old connections and recreate properly
-        this.store.connections.clear();
-
-        // Create a proper flow:
-        // Start triggers the gate
-        // Constant A -> Constant B -> Calculate provides the data path
-
-        // Data path: constA -> constB -> calc -> gate(data)
-        this.store.addConnection(constA.id, 'output', constB.id, 'input');
-        this.store.addConnection(constB.id, 'output', calc.id, 'input');
-        this.store.addConnection(calc.id, 'output', gate.id, 'data');
-
-        // Trigger path: start -> gate(trigger)
-        this.store.addConnection(start.id, 'output', gate.id, 'trigger');
-
-        // Rest: gate -> delay -> log -> end
-        this.store.addConnection(gate.id, 'output', delay.id, 'input');
-        this.store.addConnection(delay.id, 'output', log.id, 'input');
-        this.store.addConnection(log.id, 'output', end.id, 'input');
+        // Connect them
+        this.store.addConnection(schedulerNode.id, 'output', delayNode.id, 'input');
+        this.store.addConnection(delayNode.id, 'output', bellNode.id, 'input');
+        this.store.addConnection(bellNode.id, 'output', endNode.id, 'input');
 
         // Fit to content
         setTimeout(() => {
@@ -271,10 +225,6 @@ class WorkflowBuilder {
             const vp = this.renderer.viewport;
             this.store.setViewport(vp.panX, vp.panY, vp.zoom);
         }, 100);
-    }
-
-    _startRenderLoop() {
-        this.renderer.startRenderLoop(() => this.store.getState());
     }
 }
 

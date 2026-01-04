@@ -9,7 +9,7 @@ export class LogNode extends FlowNode {
     static category = 'Data';
     static displayName = 'Log';
     static icon = 'terminal';
-    static color = '#4DD0E1';
+    static color = '#4DB6AC'; // Teal variant - data output
 
     static propertySchema = [
         { key: 'watchKey', type: 'string', label: 'Watch key', defaultValue: '*', placeholder: '* for entire payload' }

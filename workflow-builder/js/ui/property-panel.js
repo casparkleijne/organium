@@ -102,17 +102,12 @@ export class PropertyPanel {
         // Properties section
         const schema = node.constructor.propertySchema;
         if (schema.length > 0) {
-            const propsSection = document.createElement('div');
-            propsSection.className = 'property-section';
-
-            const propsHeader = document.createElement('div');
-            propsHeader.className = 'property-section-header';
-            propsHeader.textContent = 'Properties';
-            propsSection.appendChild(propsHeader);
+            const propsSection = this._createCollapsibleSection('Properties');
+            const propsContent = propsSection.querySelector('.property-section-content');
 
             schema.forEach(prop => {
                 const field = this._createPropertyField(node, prop);
-                propsSection.appendChild(field);
+                propsContent.appendChild(field);
             });
 
             this.container.appendChild(propsSection);
@@ -122,14 +117,13 @@ export class PropertyPanel {
         const connectionsSection = this._renderConnections(node);
         this.container.appendChild(connectionsSection);
 
-        // Actions section
-        const actionsSection = document.createElement('div');
-        actionsSection.className = 'property-section';
+        // JSON section
+        const jsonSection = this._renderJsonView(node);
+        this.container.appendChild(jsonSection);
 
-        const actionsHeader = document.createElement('div');
-        actionsHeader.className = 'property-section-header';
-        actionsHeader.textContent = 'Actions';
-        actionsSection.appendChild(actionsHeader);
+        // Actions section
+        const actionsSection = this._createCollapsibleSection('Actions');
+        const actionsContent = actionsSection.querySelector('.property-section-content');
 
         const actions = document.createElement('div');
         actions.className = 'property-actions';
@@ -146,9 +140,38 @@ export class PropertyPanel {
 
         actions.appendChild(duplicateBtn);
         actions.appendChild(deleteBtn);
-        actionsSection.appendChild(actions);
+        actionsContent.appendChild(actions);
 
         this.container.appendChild(actionsSection);
+    }
+
+    _createCollapsibleSection(title) {
+        const section = document.createElement('div');
+        section.className = 'property-section';
+
+        const header = document.createElement('div');
+        header.className = 'property-section-header';
+
+        const headerText = document.createElement('span');
+        headerText.textContent = title;
+        header.appendChild(headerText);
+
+        const collapseIcon = document.createElement('span');
+        collapseIcon.className = 'material-symbols-outlined collapse-icon';
+        collapseIcon.textContent = 'expand_more';
+        header.appendChild(collapseIcon);
+
+        header.addEventListener('click', () => {
+            section.classList.toggle('collapsed');
+        });
+
+        section.appendChild(header);
+
+        const content = document.createElement('div');
+        content.className = 'property-section-content';
+        section.appendChild(content);
+
+        return section;
     }
 
     _createPropertyField(node, prop) {
@@ -168,7 +191,20 @@ export class PropertyPanel {
                 input.value = node.properties[prop.key] || '';
                 input.placeholder = prop.placeholder || '';
                 input.addEventListener('change', () => {
-                    node.setProperty(prop.key, input.value);
+                    let value = input.value;
+                    // Check if this is a variable name property that needs uniqueness
+                    const isVariableNameProp =
+                        (node.getType() === 'constant' && prop.key === 'name') ||
+                        (node.getType() === 'calculate' && prop.key === 'outputKey');
+
+                    if (isVariableNameProp && value) {
+                        // Generate unique name if there's a conflict
+                        value = this.store.generateUniqueVariableName(value, node.id);
+                        if (value !== input.value) {
+                            input.value = value; // Update input to show the unique name
+                        }
+                    }
+                    node.setProperty(prop.key, value);
                     this.renderer.requestRender();
                 });
                 break;
@@ -185,6 +221,37 @@ export class PropertyPanel {
                     this.renderer.requestRender();
                 });
                 break;
+
+            case 'range':
+                const rangeWrapper = document.createElement('div');
+                rangeWrapper.className = 'range-wrapper';
+
+                input = document.createElement('input');
+                input.type = 'range';
+                input.className = 'range-input';
+                input.value = node.properties[prop.key] ?? prop.defaultValue ?? 50;
+                input.min = prop.min ?? 0;
+                input.max = prop.max ?? 100;
+                input.step = prop.step ?? 1;
+
+                const rangeValue = document.createElement('span');
+                rangeValue.className = 'range-value';
+                rangeValue.textContent = input.value;
+
+                input.addEventListener('input', () => {
+                    rangeValue.textContent = input.value;
+                });
+
+                input.addEventListener('change', () => {
+                    node.setProperty(prop.key, parseInt(input.value, 10));
+                    this.renderer.requestRender();
+                });
+
+                rangeWrapper.appendChild(input);
+                rangeWrapper.appendChild(rangeValue);
+                field.appendChild(label);
+                field.appendChild(rangeWrapper);
+                return field;
 
             case 'boolean':
                 const toggle = document.createElement('div');
@@ -225,6 +292,81 @@ export class PropertyPanel {
                 });
                 break;
 
+            case 'variable-select':
+                input = document.createElement('select');
+                input.className = 'variable-select';
+
+                // Get upstream variables
+                const upstreamVars = this.store.getUpstreamVariables(node.id);
+                const currentValue = node.properties[prop.key] || '';
+
+                // Add empty option
+                const emptyOpt = document.createElement('option');
+                emptyOpt.value = '';
+                emptyOpt.textContent = '-- Select variable --';
+                emptyOpt.selected = !currentValue;
+                input.appendChild(emptyOpt);
+
+                // Add upstream variables
+                upstreamVars.forEach(varName => {
+                    const option = document.createElement('option');
+                    option.value = varName;
+                    option.textContent = varName;
+                    option.selected = currentValue === varName;
+                    input.appendChild(option);
+                });
+
+                // If current value is not in the list, add it as custom
+                if (currentValue && !upstreamVars.includes(currentValue)) {
+                    const customOpt = document.createElement('option');
+                    customOpt.value = currentValue;
+                    customOpt.textContent = `${currentValue} (custom)`;
+                    customOpt.selected = true;
+                    input.appendChild(customOpt);
+                }
+
+                // Add divider and custom option
+                const dividerOpt = document.createElement('option');
+                dividerOpt.disabled = true;
+                dividerOpt.textContent = '────────────';
+                input.appendChild(dividerOpt);
+
+                const customOption = document.createElement('option');
+                customOption.value = '__custom__';
+                customOption.textContent = '+ Custom value...';
+                input.appendChild(customOption);
+
+                input.addEventListener('change', () => {
+                    if (input.value === '__custom__') {
+                        // Prompt for custom value
+                        const custom = prompt('Enter custom variable name:', currentValue);
+                        if (custom !== null && custom.trim()) {
+                            node.setProperty(prop.key, custom.trim());
+                            this.renderer.requestRender();
+                            this.render();
+                        } else {
+                            // Reset to previous value
+                            input.value = currentValue;
+                        }
+                    } else {
+                        node.setProperty(prop.key, input.value);
+                        this.renderer.requestRender();
+                    }
+                });
+
+                // Show indicator if no upstream vars
+                if (upstreamVars.length === 0) {
+                    const hint = document.createElement('span');
+                    hint.className = 'variable-hint';
+                    hint.textContent = 'No upstream variables found';
+                    field.appendChild(label);
+                    field.appendChild(input);
+                    field.appendChild(hint);
+                    input.className = 'property-input variable-select';
+                    return field;
+                }
+                break;
+
             default:
                 input = document.createElement('input');
                 input.type = 'text';
@@ -232,7 +374,12 @@ export class PropertyPanel {
         }
 
         if (input) {
-            input.className = 'property-input';
+            // Preserve existing classes like 'variable-select'
+            if (!input.className.includes('variable-select')) {
+                input.className = 'property-input';
+            } else {
+                input.className = 'property-input variable-select';
+            }
             field.appendChild(input);
         }
 
@@ -264,13 +411,8 @@ export class PropertyPanel {
     }
 
     _renderConnections(node) {
-        const section = document.createElement('div');
-        section.className = 'property-section';
-
-        const header = document.createElement('div');
-        header.className = 'property-section-header';
-        header.textContent = 'Connections';
-        section.appendChild(header);
+        const section = this._createCollapsibleSection('Connections');
+        const content = section.querySelector('.property-section-content');
 
         const incoming = this.store.getConnectionsToNode(node.id);
         const outgoing = this.store.getConnectionsFromNode(node.id);
@@ -279,7 +421,7 @@ export class PropertyPanel {
             const noConns = document.createElement('div');
             noConns.className = 'property-no-connections';
             noConns.textContent = 'No connections';
-            section.appendChild(noConns);
+            content.appendChild(noConns);
             return section;
         }
 
@@ -287,11 +429,11 @@ export class PropertyPanel {
             const inLabel = document.createElement('div');
             inLabel.className = 'connection-group-label';
             inLabel.textContent = 'Incoming';
-            section.appendChild(inLabel);
+            content.appendChild(inLabel);
 
             incoming.forEach(conn => {
                 const item = this._createConnectionItem(conn, true);
-                section.appendChild(item);
+                content.appendChild(item);
             });
         }
 
@@ -299,11 +441,11 @@ export class PropertyPanel {
             const outLabel = document.createElement('div');
             outLabel.className = 'connection-group-label';
             outLabel.textContent = 'Outgoing';
-            section.appendChild(outLabel);
+            content.appendChild(outLabel);
 
             outgoing.forEach(conn => {
                 const item = this._createConnectionItem(conn, false);
-                section.appendChild(item);
+                content.appendChild(item);
             });
         }
 
@@ -339,6 +481,22 @@ export class PropertyPanel {
         item.appendChild(deleteBtn);
 
         return item;
+    }
+
+    _renderJsonView(node) {
+        const section = this._createCollapsibleSection('JSON');
+        section.classList.add('collapsed'); // Start collapsed
+        const content = section.querySelector('.property-section-content');
+
+        const jsonData = node.serialize();
+        const formatted = JSON.stringify(jsonData, null, 2);
+
+        const pre = document.createElement('pre');
+        pre.className = 'json-view';
+        pre.textContent = formatted;
+
+        content.appendChild(pre);
+        return section;
     }
 
     _duplicateNode(node) {

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workflow Builder</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,27 +13,33 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles.css?v=1.5.0">
 </head>
 <body>
     <div class="app-container">
         <!-- Left Sidebar -->
-        <aside class="left-sidebar">
+        <aside class="left-sidebar" id="left-sidebar">
+            <button class="sidebar-toggle sidebar-toggle-left" id="toggle-left" title="Toggle sidebar">
+                <span class="material-symbols-outlined">chevron_left</span>
+            </button>
             <div class="sidebar-header">
                 <h1>
                     <span class="material-symbols-outlined">account_tree</span>
-                    Workflow Builder
+                    <span class="sidebar-title-text">Workflow Builder</span>
                 </h1>
             </div>
             <div class="sidebar-content">
-                <div id="palette"></div>
                 <div id="settings"></div>
+                <div id="palette"></div>
             </div>
         </aside>
 
         <!-- Canvas Area -->
         <main class="canvas-area">
-            <canvas id="canvas"></canvas>
+            <div id="canvas-container"></div>
+
+            <!-- Version -->
+            <div id="version">v1.5.0</div>
 
             <!-- Run Controls -->
             <div id="run-controls"></div>
@@ -40,18 +47,21 @@
             <!-- Canvas Controls -->
             <div id="canvas-controls"></div>
 
-            <!-- Minimap -->
-            <canvas id="minimap" width="180" height="120"></canvas>
+            <!-- Validation Panel -->
+            <div id="validation-panel"></div>
         </main>
 
         <!-- Right Sidebar -->
-        <aside class="right-sidebar">
+        <aside class="right-sidebar" id="right-sidebar">
+            <button class="sidebar-toggle sidebar-toggle-right" id="toggle-right" title="Toggle sidebar">
+                <span class="material-symbols-outlined">chevron_right</span>
+            </button>
             <div class="sidebar-title">Properties</div>
             <div id="properties"></div>
         </aside>
     </div>
 
     <!-- Main Script -->
-    <script type="module" src="js/main.js"></script>
+    <script type="module" src="js/main.js?v=1.5.0"></script>
 </body>
 </html>

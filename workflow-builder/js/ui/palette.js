@@ -19,15 +19,46 @@ export class Palette {
     render() {
         this.container.innerHTML = '';
 
-        const categories = NodeRegistry.getCategoriesWithNodes();
+        // Define category order
+        const categoryOrder = ['Flow Control', 'Flow', 'Data', 'Logic'];
+        const defaultCollapsed = [];
+
+        const allCategories = NodeRegistry.getCategoriesWithNodes();
+
+        // Sort categories by defined order
+        const categories = allCategories.sort((a, b) => {
+            const indexA = categoryOrder.indexOf(a.name);
+            const indexB = categoryOrder.indexOf(b.name);
+            const orderA = indexA === -1 ? 999 : indexA;
+            const orderB = indexB === -1 ? 999 : indexB;
+            return orderA - orderB;
+        });
 
         categories.forEach(category => {
             const section = document.createElement('div');
             section.className = 'palette-section';
 
+            // Collapse by default if in defaultCollapsed list
+            if (defaultCollapsed.includes(category.name)) {
+                section.classList.add('collapsed');
+            }
+
             const header = document.createElement('div');
             header.className = 'palette-section-header';
-            header.textContent = category.name;
+
+            const headerText = document.createElement('span');
+            headerText.textContent = category.name;
+            header.appendChild(headerText);
+
+            const collapseIcon = document.createElement('span');
+            collapseIcon.className = 'material-symbols-outlined collapse-icon';
+            collapseIcon.textContent = 'expand_more';
+            header.appendChild(collapseIcon);
+
+            header.addEventListener('click', () => {
+                section.classList.toggle('collapsed');
+            });
+
             section.appendChild(header);
 
             const items = document.createElement('div');
@@ -72,10 +103,10 @@ export class Palette {
         this.container.addEventListener('dragstart', this._onDragStart.bind(this));
         this.container.addEventListener('dragend', this._onDragEnd.bind(this));
 
-        // Drop on canvas
-        const canvas = this.renderer.canvas;
-        canvas.addEventListener('dragover', this._onDragOver.bind(this));
-        canvas.addEventListener('drop', this._onDrop.bind(this));
+        // Drop on canvas/svg
+        const target = this.renderer.svg || this.renderer.canvas;
+        target.addEventListener('dragover', this._onDragOver.bind(this));
+        target.addEventListener('drop', this._onDrop.bind(this));
     }
 
     _onDragStart(e) {
@@ -111,7 +142,8 @@ export class Palette {
         if (!this.draggedType) return;
         e.preventDefault();
 
-        const rect = this.renderer.canvas.getBoundingClientRect();
+        const el = this.renderer.svg || this.renderer.canvas;
+        const rect = el.getBoundingClientRect();
         const screenX = e.clientX - rect.left;
         const screenY = e.clientY - rect.top;
         const world = this.renderer.screenToWorld(screenX, screenY);

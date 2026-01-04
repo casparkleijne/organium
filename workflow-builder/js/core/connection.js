@@ -10,6 +10,23 @@ export class Connection {
         this.fromPortId = fromPortId;
         this.toNodeId = toNodeId;
         this.toPortId = toPortId;
+
+        // Execution state: 'idle' | 'active' | 'completed'
+        this.runState = 'idle';
+        // Message dot animation progress (0-1)
+        this.messageProgress = 0;
+    }
+
+    setRunState(state) {
+        this.runState = state;
+        if (state === 'active') {
+            this.messageProgress = 0;
+        }
+    }
+
+    resetRunState() {
+        this.runState = 'idle';
+        this.messageProgress = 0;
     }
 
     serialize() {

@@ -9,7 +9,7 @@ export class DecisionNode extends LogicNode {
     static category = 'Logic';
     static displayName = 'Decision';
     static icon = 'call_split';
-    static color = '#E37434';
+    static color = '#FFA726'; // Orange - branching
 
     static propertySchema = [
         {
@@ -22,7 +22,7 @@ export class DecisionNode extends LogicNode {
                 { value: 'expression', label: 'Expression' }
             ]
         },
-        { key: 'keyA', type: 'string', label: 'Key A', defaultValue: 'a', placeholder: 'Payload key' },
+        { key: 'keyA', type: 'variable-select', label: 'Key A', defaultValue: '' },
         {
             key: 'comparator',
             type: 'select',
@@ -37,7 +37,7 @@ export class DecisionNode extends LogicNode {
                 { value: '>=', label: '>= Greater or equal' }
             ]
         },
-        { key: 'keyB', type: 'string', label: 'Key B / Value', defaultValue: '0', placeholder: 'Key or literal value' },
+        { key: 'keyB', type: 'variable-select', label: 'Key B / Value', defaultValue: '' },
         { key: 'expression', type: 'string', label: 'Expression', defaultValue: 'payload.value > 0', placeholder: 'JavaScript expression' }
     ];
     static inputPorts = [{ id: 'input', position: 'top' }];

@@ -9,7 +9,7 @@ export class CalculateNode extends BaseNode {
     static category = 'Data';
     static displayName = 'Calculate';
     static icon = 'calculate';
-    static color = '#64B5F6';
+    static color = '#26A69A'; // Teal - data processing
 
     static propertySchema = [
         {
@@ -26,8 +26,8 @@ export class CalculateNode extends BaseNode {
                 { value: '^', label: '^ Power' }
             ]
         },
-        { key: 'inputA', type: 'string', label: 'Input A key', defaultValue: 'a', placeholder: 'Payload key for A' },
-        { key: 'inputB', type: 'string', label: 'Input B key', defaultValue: 'b', placeholder: 'Payload key for B' },
+        { key: 'inputA', type: 'variable-select', label: 'Input A', defaultValue: '' },
+        { key: 'inputB', type: 'variable-select', label: 'Input B', defaultValue: '' },
         { key: 'outputKey', type: 'string', label: 'Output key', defaultValue: 'result', placeholder: 'Result key' }
     ];
     static inputPorts = [{ id: 'input', position: 'top' }];

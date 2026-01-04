@@ -36,6 +36,7 @@ export class NodeRenderer {
         const radius = bounds.width / 2;
 
         ctx.save();
+        ctx.shadowBlur = 0; // Reset shadow state
 
         // Gradient fill
         const gradient = ctx.createRadialGradient(cx, cy - radius * 0.3, 0, cx, cy, radius);
@@ -104,6 +105,7 @@ export class NodeRenderer {
         const color = node.getColor();
 
         ctx.save();
+        ctx.shadowBlur = 0; // Reset shadow state
 
         // Selection glow
         if (node.selected) {
@@ -119,7 +121,7 @@ export class NodeRenderer {
 
         // Background
         ctx.fillStyle = this.surfaceContainer;
-        this._roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 6);
+        this._roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 3);
         ctx.fill();
 
         // Border
@@ -161,9 +163,10 @@ export class NodeRenderer {
         const ctx = this.ctx;
         const bounds = node.getBounds();
         const color = node.getColor();
-        const headerHeight = 48;
+        const headerHeight = 36;
 
         ctx.save();
+        ctx.shadowBlur = 0; // Reset shadow state
 
         // Selection glow
         if (node.selected) {
@@ -179,7 +182,7 @@ export class NodeRenderer {
 
         // Background
         ctx.fillStyle = this.surfaceContainer;
-        this._roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 8);
+        this._roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 4);
         ctx.fill();
 
         // Border
@@ -192,7 +195,7 @@ export class NodeRenderer {
         // Header
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.roundRect(bounds.x, bounds.y, bounds.width, headerHeight, [8, 8, 0, 0]);
+        ctx.roundRect(bounds.x, bounds.y, bounds.width, headerHeight, [4, 4, 0, 0]);
         ctx.fill();
 
         // Divider
@@ -204,28 +207,28 @@ export class NodeRenderer {
         ctx.stroke();
 
         // Icon in header
-        const iconX = bounds.x + 20;
+        const iconX = bounds.x + 16;
         const iconY = bounds.y + headerHeight / 2;
         ctx.fillStyle = getContrastColor(color);
-        ctx.font = '24px "Material Symbols Outlined"';
+        ctx.font = '20px "Material Symbols Outlined"';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(node.getIcon(), iconX, iconY);
 
         // Title in header
         ctx.fillStyle = getContrastColor(color);
-        ctx.font = '500 14px Roboto';
+        ctx.font = '500 13px Roboto';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(node.getDisplayTitle(), bounds.x + 40, iconY);
+        ctx.fillText(node.getDisplayTitle(), bounds.x + 32, iconY);
 
-        // Body content (preview text)
+        // Body content (preview text - centered, bold, large)
         if (typeof node.getPreviewText === 'function') {
             const preview = node.getPreviewText();
             ctx.fillStyle = this.onSurfaceVariant;
-            ctx.font = '400 12px Roboto';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'top';
+            ctx.font = '600 24px Roboto';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
 
             // Truncate if needed
             const maxWidth = bounds.width - 32;
@@ -237,7 +240,7 @@ export class NodeRenderer {
                 displayText += '...';
             }
 
-            ctx.fillText(displayText, bounds.x + 16, bounds.y + headerHeight + 12);
+            ctx.fillText(displayText, bounds.x + bounds.width / 2, bounds.y + headerHeight + 22);
         }
 
         // Delay progress bar (shows during 'waiting' state)
@@ -268,7 +271,7 @@ export class NodeRenderer {
         // Hover state layer
         if (node.hovered && !node.selected) {
             ctx.fillStyle = withAlpha(this.onSurface, 0.08);
-            this._roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 8);
+            this._roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 4);
             ctx.fill();
         }
 

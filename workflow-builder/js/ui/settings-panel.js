@@ -1,6 +1,7 @@
 /**
  * SettingsPanel - canvas settings in left sidebar
  */
+import { modal } from './modal.js';
 
 export class SettingsPanel {
     constructor(container, store, renderer, callbacks = {}) {
@@ -16,51 +17,74 @@ export class SettingsPanel {
         const settings = this.store.getSettings();
 
         this.container.innerHTML = `
-            <div class="settings-section">
-                <div class="settings-header">Settings</div>
-
-                <div class="setting-item">
-                    <label for="showGrid">Show grid</label>
-                    <div class="toggle-wrapper">
-                        <input type="checkbox" id="showGrid" ${settings.showGrid ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                    </div>
+            <div class="settings-section collapsed">
+                <div class="settings-header">
+                    <span>Settings</span>
+                    <span class="material-symbols-outlined collapse-icon">expand_more</span>
                 </div>
-
-                <div class="setting-item">
-                    <label for="snapToGrid">Snap to grid</label>
-                    <div class="toggle-wrapper">
-                        <input type="checkbox" id="snapToGrid" ${settings.snapToGrid ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
+                <div class="settings-content">
+                    <div class="setting-item">
+                        <label for="showGrid">Show grid</label>
+                        <div class="toggle-wrapper">
+                            <input type="checkbox" id="showGrid" ${settings.showGrid ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </div>
                     </div>
-                </div>
 
-                <div class="setting-item">
-                    <label for="gridSize">Grid size</label>
-                    <input type="range" id="gridSize" min="10" max="50" step="5" value="${settings.gridSize}">
-                    <span class="setting-value">${settings.gridSize}px</span>
+                    <div class="setting-item">
+                        <label for="snapToGrid">Snap to grid</label>
+                        <div class="toggle-wrapper">
+                            <input type="checkbox" id="snapToGrid" ${settings.snapToGrid ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="gridSize">Grid size</label>
+                        <input type="range" id="gridSize" min="10" max="50" step="5" value="${settings.gridSize}">
+                        <span class="setting-value">${settings.gridSize}px</span>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="darkTheme">Dark theme</label>
+                        <div class="toggle-wrapper">
+                            <input type="checkbox" id="darkTheme" ${settings.darkTheme !== false ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="settings-section">
-                <div class="settings-header">Actions</div>
-
-                <div class="settings-actions">
-                    <button class="btn btn-outlined" id="newBtn">
-                        <span class="material-symbols-outlined">add</span>
-                        New
-                    </button>
-                    <button class="btn btn-outlined" id="exportBtn">
-                        <span class="material-symbols-outlined">download</span>
-                        Export
-                    </button>
-                    <button class="btn btn-outlined" id="importBtn">
-                        <span class="material-symbols-outlined">upload</span>
-                        Import
-                    </button>
+            <div class="settings-section collapsed">
+                <div class="settings-header">
+                    <span>Actions</span>
+                    <span class="material-symbols-outlined collapse-icon">expand_more</span>
+                </div>
+                <div class="settings-content">
+                    <div class="settings-actions">
+                        <button class="btn btn-outlined" id="newBtn">
+                            <span class="material-symbols-outlined">add</span>
+                            New
+                        </button>
+                        <button class="btn btn-outlined" id="exportBtn">
+                            <span class="material-symbols-outlined">download</span>
+                            Export
+                        </button>
+                        <button class="btn btn-outlined" id="importBtn">
+                            <span class="material-symbols-outlined">upload</span>
+                            Import
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
+
+        // Add collapse handlers
+        this.container.querySelectorAll('.settings-header').forEach(header => {
+            header.addEventListener('click', () => {
+                header.parentElement.classList.toggle('collapsed');
+            });
+        });
 
         this._bindEvents();
     }
@@ -87,12 +111,25 @@ export class SettingsPanel {
             this.renderer.setGridSettings(this.store.getSettings().showGrid, size);
         });
 
+        // Theme toggle
+        this.container.querySelector('#darkTheme').addEventListener('change', (e) => {
+            const isDark = e.target.checked;
+            this.store.setSetting('darkTheme', isDark);
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            this.renderer.setTheme(isDark ? 'dark' : 'light');
+        });
+
         // New
-        this.container.querySelector('#newBtn').addEventListener('click', () => {
-            if (confirm('Create new workflow? Unsaved changes will be lost.')) {
-                this.store.clear();
+        this.container.querySelector('#newBtn').addEventListener('click', async () => {
+            const confirmed = await modal.confirm(
+                'Create new workflow? Unsaved changes will be lost.',
+                'New Workflow',
+                { icon: 'note_add', danger: true, confirmText: 'Create New' }
+            );
+            if (confirmed) {
+                this._createNewWorkflow();
                 if (this.callbacks.onNotify) {
-                    this.callbacks.onNotify('Canvas cleared');
+                    this.callbacks.onNotify('New workflow created');
                 }
             }
         });
@@ -135,7 +172,7 @@ export class SettingsPanel {
                             this.callbacks.onNotify('Workflow imported');
                         }
                     } catch (err) {
-                        alert('Failed to import workflow: ' + err.message);
+                        modal.error('Failed to import workflow: ' + err.message, 'Import Error');
                     }
                 };
                 reader.readAsText(file);
@@ -143,5 +180,40 @@ export class SettingsPanel {
 
             input.click();
         });
+    }
+
+    _createNewWorkflow() {
+        // Clear existing workflow
+        this.store.clear();
+
+        // Get canvas center position
+        const container = this.renderer.container;
+        const rect = container.getBoundingClientRect();
+        const vp = this.renderer.viewport;
+
+        // Calculate center in world coordinates
+        const centerX = (rect.width / 2 - vp.panX) / vp.zoom;
+        const centerY = (rect.height / 2 - vp.panY) / vp.zoom;
+
+        // Create default workflow: Scheduler → Delay → Bell → End
+        const spacing = 100;
+        const startY = centerY - spacing * 1.5;
+
+        const schedulerNode = this.store.addNode('scheduler', centerX - 28, startY);
+        const delayNode = this.store.addNode('delay', centerX - 28, startY + spacing);
+        const bellNode = this.store.addNode('bell', centerX - 28, startY + spacing * 2);
+        const endNode = this.store.addNode('end', centerX - 28, startY + spacing * 3);
+
+        // Connect them
+        this.store.addConnection(schedulerNode.id, 'output', delayNode.id, 'input');
+        this.store.addConnection(delayNode.id, 'output', bellNode.id, 'input');
+        this.store.addConnection(bellNode.id, 'output', endNode.id, 'input');
+
+        // Fit to content
+        setTimeout(() => {
+            this.renderer.fitToContent(this.store.getNodes(), 150);
+            const newVp = this.renderer.viewport;
+            this.store.setViewport(newVp.panX, newVp.panY, newVp.zoom);
+        }, 50);
     }
 }
