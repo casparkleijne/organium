@@ -69,6 +69,11 @@ class WorkflowBuilder {
         this.renderer.setGridSettings(settings.showGrid, settings.gridSize);
         this.renderer.setViewport(100, 100, 1);
 
+        // Apply theme
+        const isDark = settings.darkTheme !== false;
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        this.renderer.setTheme(isDark ? 'dark' : 'light');
+
         // Sync viewport changes
         this.store.on('viewportChanged', (viewport) => {
             this.renderer.setViewport(viewport.panX, viewport.panY, viewport.zoom);

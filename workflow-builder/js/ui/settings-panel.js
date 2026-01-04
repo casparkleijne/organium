@@ -44,6 +44,14 @@ export class SettingsPanel {
                         <input type="range" id="gridSize" min="10" max="50" step="5" value="${settings.gridSize}">
                         <span class="setting-value">${settings.gridSize}px</span>
                     </div>
+
+                    <div class="setting-item">
+                        <label for="darkTheme">Dark theme</label>
+                        <div class="toggle-wrapper">
+                            <input type="checkbox" id="darkTheme" ${settings.darkTheme !== false ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -101,6 +109,14 @@ export class SettingsPanel {
             gridValue.textContent = `${size}px`;
             this.store.setSetting('gridSize', size);
             this.renderer.setGridSettings(this.store.getSettings().showGrid, size);
+        });
+
+        // Theme toggle
+        this.container.querySelector('#darkTheme').addEventListener('change', (e) => {
+            const isDark = e.target.checked;
+            this.store.setSetting('darkTheme', isDark);
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            this.renderer.setTheme(isDark ? 'dark' : 'light');
         });
 
         // New

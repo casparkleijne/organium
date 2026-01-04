@@ -49,8 +49,8 @@ export class SvgRenderer extends EventEmitter {
         this._lastNodes = null;
         this._lastConnections = null;
 
-        // Colors
-        this.colors = {
+        // Colors (dark theme default)
+        this._darkColors = {
             background: '#0E1514',
             surface: '#1A2120',
             surfaceHigh: '#252B2A',
@@ -63,6 +63,22 @@ export class SvgRenderer extends EventEmitter {
             error: '#FFB4AB',
             gridLine: '#1F2726'
         };
+
+        this._lightColors = {
+            background: '#F5FBF8',
+            surface: '#E9EFEC',
+            surfaceHigh: '#E3EAE7',
+            outline: '#BEC9C5',
+            onSurface: '#171D1B',
+            onSurfaceVariant: '#3F4946',
+            primary: '#006B62',
+            tertiary: '#C25D17',
+            success: '#2E7D32',
+            error: '#BA1A1A',
+            gridLine: '#DAE5E1'
+        };
+
+        this.colors = { ...this._darkColors };
 
         // Create defs for filters (after colors are set)
         this._createDefs();
@@ -213,6 +229,12 @@ export class SvgRenderer extends EventEmitter {
         this.showGrid = show;
         this.gridSize = size;
         this.renderGrid();
+    }
+
+    setTheme(theme) {
+        this.colors = theme === 'light' ? { ...this._lightColors } : { ...this._darkColors };
+        this.renderGrid();
+        this.requestRender();
     }
 
     renderGrid() {
