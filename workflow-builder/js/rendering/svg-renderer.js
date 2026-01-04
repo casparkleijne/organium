@@ -491,26 +491,20 @@ export class SvgRenderer extends EventEmitter {
         }
         group.appendChild(bg);
 
-        // Bevel effect - top/left highlight
-        const highlightTop = this.createLine(4, 1.5, w - 4, 1.5, 'rgba(255,255,255,0.08)', 1);
-        highlightTop.setAttribute('stroke-linecap', 'round');
+        // Bevel effect - top/left highlight (very subtle)
+        const highlightTop = this.createLine(4, 0.75, w - 4, 0.75, 'rgba(255,255,255,0.04)', 0.5);
         group.appendChild(highlightTop);
-        const highlightLeft = this.createLine(1.5, 4, 1.5, h - 4, 'rgba(255,255,255,0.05)', 1);
-        highlightLeft.setAttribute('stroke-linecap', 'round');
+        const highlightLeft = this.createLine(0.75, 4, 0.75, h - 4, 'rgba(255,255,255,0.03)', 0.5);
         group.appendChild(highlightLeft);
 
-        // Bevel effect - bottom/right shadow
-        const shadowBottom = this.createLine(4, h - 1.5, w - 4, h - 1.5, 'rgba(0,0,0,0.15)', 1);
-        shadowBottom.setAttribute('stroke-linecap', 'round');
+        // Bevel effect - bottom/right shadow (very subtle)
+        const shadowBottom = this.createLine(4, h - 0.75, w - 4, h - 0.75, 'rgba(0,0,0,0.08)', 0.5);
         group.appendChild(shadowBottom);
-        const shadowRight = this.createLine(w - 1.5, 4, w - 1.5, h - 4, 'rgba(0,0,0,0.1)', 1);
-        shadowRight.setAttribute('stroke-linecap', 'round');
+        const shadowRight = this.createLine(w - 0.75, 4, w - 0.75, h - 4, 'rgba(0,0,0,0.06)', 0.5);
         group.appendChild(shadowRight);
 
-        // Subtle separator line at header bottom (3D bevel effect)
-        const lineHighlight = this.createRect(1, headerHeight - 1, w - 2, 1, 0, 'rgba(255,255,255,0.06)');
-        group.appendChild(lineHighlight);
-        const lineShadow = this.createRect(1, headerHeight, w - 2, 1, 0, 'rgba(0,0,0,0.2)');
+        // Subtle separator line at header bottom
+        const lineShadow = this.createLine(4, headerHeight, w - 4, headerHeight, 'rgba(0,0,0,0.12)', 0.5);
         group.appendChild(lineShadow);
 
         // Icon (colored with node color)
