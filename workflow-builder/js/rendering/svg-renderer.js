@@ -448,28 +448,19 @@ export class SvgRenderer extends EventEmitter {
         }
         group.appendChild(bg);
 
-        // Header
-        const header = this.createRect(0, 0, w, headerHeight, 4, color);
-        header.setAttribute('clip-path', 'inset(0 0 0 0 round 4px 4px 0 0)');
-        group.appendChild(header);
-
-        // Header clip (to make bottom corners square)
-        const headerBottom = this.createRect(0, headerHeight - 4, w, 4, 0, color);
-        group.appendChild(headerBottom);
-
-        // Subtle glass line at bottom of header
-        const lineHighlight = this.createRect(0, headerHeight - 1, w, 1, 0, 'rgba(255,255,255,0.3)');
+        // Subtle separator line at header bottom
+        const lineHighlight = this.createRect(0, headerHeight - 1, w, 1, 0, 'rgba(255,255,255,0.1)');
         group.appendChild(lineHighlight);
-        const lineShadow = this.createRect(0, headerHeight, w, 1, 0, 'rgba(0,0,0,0.2)');
+        const lineShadow = this.createRect(0, headerHeight, w, 1, 0, 'rgba(0,0,0,0.3)');
         group.appendChild(lineShadow);
 
-        // Icon
-        const icon = this.createText(14, headerHeight / 2, node.getIcon(), getContrastColor(color), '16px');
+        // Icon (colored with node color)
+        const icon = this.createText(14, headerHeight / 2, node.getIcon(), color, '16px');
         icon.setAttribute('font-family', 'Material Symbols Outlined');
         group.appendChild(icon);
 
         // Title
-        const title = this.createText(30, headerHeight / 2, node.getDisplayTitle(), getContrastColor(color), '12px');
+        const title = this.createText(30, headerHeight / 2, node.getDisplayTitle(), this.colors.onSurface, '12px');
         title.setAttribute('text-anchor', 'start');
         title.setAttribute('font-weight', '500');
         group.appendChild(title);
