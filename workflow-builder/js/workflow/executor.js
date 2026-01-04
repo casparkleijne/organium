@@ -269,6 +269,9 @@ export class Executor extends EventEmitter {
                 if (result.split) {
                     // Splitter node
                     this._splitMessage(node, result.message);
+                } else if (result.repeat) {
+                    // Repeater node
+                    this._repeatMessage(node, result.message, result.outputPort, result.repeat);
                 } else {
                     this._forwardMessage(node, result.message, result.outputPort);
                 }
@@ -404,6 +407,39 @@ export class Executor extends EventEmitter {
                 }, animationDuration);
             }
         });
+    }
+
+    _repeatMessage(fromNode, message, outputPort, repeatConfig) {
+        const { count, delay } = repeatConfig;
+
+        const sendRepeat = (index) => {
+            if (index >= count || this.status !== 'running') return;
+
+            fromNode.setCurrentRepeat(index + 1);
+            fromNode.setRunState('active');
+            this.store.emit('change');
+
+            // Clone the message for each repeat
+            const repeatedMessage = message.fork(index, count);
+            this._forwardMessage(fromNode, repeatedMessage, outputPort);
+
+            // Schedule next repeat
+            if (index + 1 < count) {
+                this.pendingForwards++;
+                setTimeout(() => {
+                    this.pendingForwards--;
+                    sendRepeat(index + 1);
+                }, Math.max(delay, 100) / this.speed);
+            } else {
+                // All repeats done
+                setTimeout(() => {
+                    fromNode.setRunState('completed');
+                    this.store.emit('change');
+                }, 100 / this.speed);
+            }
+        };
+
+        sendRepeat(0);
     }
 
     _startScheduler(node) {
