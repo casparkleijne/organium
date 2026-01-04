@@ -6,7 +6,7 @@ import { NodeRegistry } from '../../core/registry.js';
 
 export class BellNode extends DataNode {
     static type = 'bell';
-    static category = 'Action';
+    static category = 'Data';
     static displayName = 'Bell';
     static icon = 'notifications';
     static color = '#EC407A'; // Pink - action output

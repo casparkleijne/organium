@@ -19,9 +19,9 @@ export class Palette {
     render() {
         this.container.innerHTML = '';
 
-        // Define category order (Action first, always collapsed)
-        const categoryOrder = ['Action', 'Flow Control', 'Flow', 'Data', 'Logic'];
-        const defaultCollapsed = ['Action'];
+        // Define category order
+        const categoryOrder = ['Flow Control', 'Flow', 'Data', 'Logic'];
+        const defaultCollapsed = [];
 
         const allCategories = NodeRegistry.getCategoriesWithNodes();
 
