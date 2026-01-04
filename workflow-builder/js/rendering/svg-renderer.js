@@ -457,23 +457,11 @@ export class SvgRenderer extends EventEmitter {
         const headerBottom = this.createRect(0, headerHeight - 4, w, 4, 0, color);
         group.appendChild(headerBottom);
 
-        // Liquid glass overlay
-        const glassOverlay = this.createRect(0, 0, w, headerHeight, 4, 'url(#glassOverlay)');
-        glassOverlay.setAttribute('clip-path', 'inset(0 0 0 0 round 4px 4px 0 0)');
-        group.appendChild(glassOverlay);
-
-        // Top shine highlight
-        const shine = this.createRect(2, 2, w * 0.6, headerHeight * 0.4, 2, 'url(#headerShine)');
-        group.appendChild(shine);
-
-        // Subtle double line at bottom of header
-        const lineColor = this._blendColor(color, '#000000', 0.2);
-        const line1 = this.createLine(0, headerHeight, w, headerHeight, lineColor, 1);
-        line1.setAttribute('opacity', '0.4');
-        group.appendChild(line1);
-        const line2 = this.createLine(0, headerHeight + 2, w, headerHeight + 2, lineColor, 1);
-        line2.setAttribute('opacity', '0.2');
-        group.appendChild(line2);
+        // Subtle glass line at bottom of header
+        const lineHighlight = this.createRect(0, headerHeight - 1, w, 1, 0, 'rgba(255,255,255,0.3)');
+        group.appendChild(lineHighlight);
+        const lineShadow = this.createRect(0, headerHeight, w, 1, 0, 'rgba(0,0,0,0.2)');
+        group.appendChild(lineShadow);
 
         // Icon
         const icon = this.createText(14, headerHeight / 2, node.getIcon(), getContrastColor(color), '16px');
