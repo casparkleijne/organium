@@ -247,13 +247,21 @@ export class ContextMenu {
             levelGroups.get(level).push(node);
         });
 
-        // Position nodes
+        // Sort nodes within each level by ID for consistent ordering
+        levelGroups.forEach(levelNodes => {
+            levelNodes.sort((a, b) => a.id.localeCompare(b.id));
+        });
+
+        // Position nodes (always horizontal: levels left-to-right)
         const startX = 100;
         const startY = 100;
         const horizontalGap = 250;
         const verticalGap = 120;
 
-        levelGroups.forEach((levelNodes, level) => {
+        // Sort levels for consistent iteration
+        const sortedLevels = Array.from(levelGroups.keys()).sort((a, b) => a - b);
+        sortedLevels.forEach(level => {
+            const levelNodes = levelGroups.get(level);
             const x = startX + level * horizontalGap;
             levelNodes.forEach((node, index) => {
                 const y = startY + index * verticalGap;
