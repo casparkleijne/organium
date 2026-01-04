@@ -45,6 +45,7 @@ import { RunControls } from './ui/run-controls.js';
 import { CanvasControls } from './ui/canvas-controls.js';
 import { SettingsPanel } from './ui/settings-panel.js';
 import { ValidationPanel } from './ui/validation-panel.js';
+import { InspectorPanel } from './ui/inspector-panel.js';
 
 class WorkflowBuilder {
     constructor() {
@@ -177,6 +178,14 @@ class WorkflowBuilder {
             this.store,
             this.executor
         );
+
+        // Inspector panel (pause-only)
+        this.inspectorPanel = new InspectorPanel(
+            document.getElementById('run-controls'),
+            this.store,
+            this.executor
+        );
+        this.runControls.setInspectorPanel(this.inspectorPanel);
 
         // Canvas controls
         this.canvasControls = new CanvasControls(

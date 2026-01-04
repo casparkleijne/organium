@@ -7,9 +7,14 @@ export class RunControls {
         this.container = container;
         this.store = store;
         this.executor = executor;
+        this.inspectorPanel = null;
 
         this.render();
         this._bindEvents();
+    }
+
+    setInspectorPanel(panel) {
+        this.inspectorPanel = panel;
     }
 
     render() {
@@ -23,6 +28,9 @@ export class RunControls {
                 </button>
                 <button class="run-btn" id="stopBtn" title="Stop">
                     <span class="material-symbols-outlined">stop</span>
+                </button>
+                <button class="run-btn run-btn-inspector" id="inspectorBtn" title="Inspector (I)" style="display: none;">
+                    <span class="material-symbols-outlined">bug_report</span>
                 </button>
                 <div class="run-status">
                     <span class="status-indicator"></span>
@@ -39,6 +47,7 @@ export class RunControls {
         this.playPauseBtn = this.container.querySelector('#playPauseBtn');
         this.stepBtn = this.container.querySelector('#stepBtn');
         this.stopBtn = this.container.querySelector('#stopBtn');
+        this.inspectorBtn = this.container.querySelector('#inspectorBtn');
         this.statusIndicator = this.container.querySelector('.status-indicator');
         this.statusText = this.container.querySelector('.status-text');
         this.speedSlider = this.container.querySelector('#speedSlider');
@@ -62,6 +71,12 @@ export class RunControls {
             this.executor.stop();
         });
 
+        this.inspectorBtn.addEventListener('click', () => {
+            if (this.inspectorPanel) {
+                this.inspectorPanel.toggle();
+            }
+        });
+
         this.speedSlider.addEventListener('input', () => {
             const speed = parseFloat(this.speedSlider.value);
             this.executor.setSpeed(speed);
@@ -80,6 +95,15 @@ export class RunControls {
         const icon = this.playPauseBtn.querySelector('.material-symbols-outlined');
 
         this.statusIndicator.className = 'status-indicator ' + status;
+
+        // Show inspector button only when paused
+        const showInspector = status === 'paused';
+        this.inspectorBtn.style.display = showInspector ? 'flex' : 'none';
+
+        // Hide inspector panel when not paused
+        if (!showInspector && this.inspectorPanel) {
+            this.inspectorPanel.hide();
+        }
 
         switch (status) {
             case 'running':
