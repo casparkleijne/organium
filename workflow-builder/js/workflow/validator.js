@@ -188,53 +188,64 @@ export class Validator {
             outgoingMap.get(conn.fromNodeId).push(conn.toNodeId);
         });
 
-        // Find all delay nodes
-        const delayNodes = [];
+        // Find all scheduler nodes
+        const schedulers = [];
         nodes.forEach(node => {
-            if (node.getType() === 'delay') {
-                delayNodes.push(node);
+            if (node.getType() === 'scheduler') {
+                schedulers.push(node);
             }
         });
 
-        // For each delay node, check its downstream delay nodes
-        delayNodes.forEach(parentDelay => {
-            const parentSeconds = parentDelay.properties.seconds || 1;
-            const parentTitle = parentDelay.getDisplayTitle();
+        // For each scheduler, calculate max path time
+        schedulers.forEach(scheduler => {
+            const intervalMs = (scheduler.properties.interval || 5) * 1000;
+            const maxPathTime = this._calculateMaxPathTime(scheduler.id, outgoingMap, new Set());
 
-            // Find all downstream delay nodes (direct children only for now)
-            const visited = new Set();
-            const queue = outgoingMap.get(parentDelay.id) || [];
-
-            while (queue.length > 0) {
-                const childId = queue.shift();
-                if (visited.has(childId)) continue;
-                visited.add(childId);
-
-                const childNode = this.store.getNode(childId);
-                if (!childNode) continue;
-
-                if (childNode.getType() === 'delay') {
-                    const childSeconds = childNode.properties.seconds || 1;
-                    const childTitle = childNode.getDisplayTitle();
-
-                    if (parentSeconds <= childSeconds) {
-                        errors.push({
-                            type: 'error',
-                            message: `Timer '${parentTitle}' (${parentSeconds}s) must have interval > child timer '${childTitle}' (${childSeconds}s)`,
-                            nodeId: parentDelay.id
-                        });
-                    }
-                }
-
-                // Continue traversal to find more downstream delays
-                const nextChildren = outgoingMap.get(childId) || [];
-                nextChildren.forEach(id => {
-                    if (!visited.has(id)) queue.push(id);
+            if (maxPathTime > intervalMs) {
+                const intervalSec = intervalMs / 1000;
+                const pathSec = (maxPathTime / 1000).toFixed(1);
+                errors.push({
+                    type: 'warning',
+                    message: `Path from '${scheduler.getDisplayTitle()}' takes ${pathSec}s but interval is ${intervalSec}s - messages may pile up`,
+                    nodeId: scheduler.id
                 });
             }
         });
 
         return errors;
+    }
+
+    _calculateMaxPathTime(nodeId, outgoingMap, visited) {
+        if (visited.has(nodeId)) return 0; // Cycle protection
+        visited.add(nodeId);
+
+        const node = this.store.getNode(nodeId);
+        if (!node) return 0;
+
+        // Calculate time contribution of this node
+        let nodeTime = 0;
+        const type = node.getType();
+
+        if (type === 'delay') {
+            nodeTime = (node.properties.seconds || 1) * 1000;
+        } else if (type === 'repeater') {
+            const count = node.properties.count || 3;
+            const delay = node.properties.delay || 0;
+            // Time = (count - 1) * delay (first one is immediate, then delay between each)
+            // Plus minimum 100ms between repeats enforced by executor
+            nodeTime = (count - 1) * Math.max(delay, 100);
+        }
+
+        // Get max time of all downstream paths
+        const children = outgoingMap.get(nodeId) || [];
+        let maxChildTime = 0;
+
+        children.forEach(childId => {
+            const childTime = this._calculateMaxPathTime(childId, outgoingMap, new Set(visited));
+            maxChildTime = Math.max(maxChildTime, childTime);
+        });
+
+        return nodeTime + maxChildTime;
     }
 
     _checkForCycles(nodes, connections) {
