@@ -18,9 +18,6 @@ export class SvgRenderer extends EventEmitter {
         this.svg.style.left = '0';
         container.appendChild(this.svg);
 
-        // Create defs for filters
-        this._createDefs();
-
         // Create layers
         this.gridLayer = this.createGroup('grid-layer');
         this.connectionLayer = this.createGroup('connection-layer');
@@ -65,6 +62,9 @@ export class SvgRenderer extends EventEmitter {
             error: '#FFB4AB',
             gridLine: '#1F2726'
         };
+
+        // Create defs for filters (after colors are set)
+        this._createDefs();
 
         this.renderGrid();
     }
