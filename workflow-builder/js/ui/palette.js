@@ -19,11 +19,29 @@ export class Palette {
     render() {
         this.container.innerHTML = '';
 
-        const categories = NodeRegistry.getCategoriesWithNodes();
+        // Define category order (Action first, always collapsed)
+        const categoryOrder = ['Action', 'Flow Control', 'Flow', 'Data', 'Logic'];
+        const defaultCollapsed = ['Action'];
+
+        const allCategories = NodeRegistry.getCategoriesWithNodes();
+
+        // Sort categories by defined order
+        const categories = allCategories.sort((a, b) => {
+            const indexA = categoryOrder.indexOf(a.name);
+            const indexB = categoryOrder.indexOf(b.name);
+            const orderA = indexA === -1 ? 999 : indexA;
+            const orderB = indexB === -1 ? 999 : indexB;
+            return orderA - orderB;
+        });
 
         categories.forEach(category => {
             const section = document.createElement('div');
             section.className = 'palette-section';
+
+            // Collapse by default if in defaultCollapsed list
+            if (defaultCollapsed.includes(category.name)) {
+                section.classList.add('collapsed');
+            }
 
             const header = document.createElement('div');
             header.className = 'palette-section-header';
