@@ -21,6 +21,7 @@ import './nodes/builtin/bell-node.js';
 import './nodes/builtin/counter-node.js';
 import './nodes/builtin/repeater-node.js';
 import './nodes/builtin/queue-node.js';
+import './nodes/builtin/stack-node.js';
 
 // Import state
 import { Store } from './state/store.js';
