@@ -17,7 +17,7 @@ export class SettingsPanel {
         const settings = this.store.getSettings();
 
         this.container.innerHTML = `
-            <div class="settings-section">
+            <div class="settings-section collapsed">
                 <div class="settings-header">
                     <span>Settings</span>
                     <span class="material-symbols-outlined collapse-icon">expand_more</span>
@@ -47,7 +47,7 @@ export class SettingsPanel {
                 </div>
             </div>
 
-            <div class="settings-section">
+            <div class="settings-section collapsed">
                 <div class="settings-header">
                     <span>Actions</span>
                     <span class="material-symbols-outlined collapse-icon">expand_more</span>
