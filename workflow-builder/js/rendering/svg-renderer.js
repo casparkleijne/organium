@@ -157,6 +157,24 @@ export class SvgRenderer extends EventEmitter {
 
         defs.appendChild(grayscaleFilter);
 
+        // Selection shadow filter (elevated card style)
+        const selectFilter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+        selectFilter.setAttribute('id', 'selectShadow');
+        selectFilter.setAttribute('x', '-50%');
+        selectFilter.setAttribute('y', '-50%');
+        selectFilter.setAttribute('width', '200%');
+        selectFilter.setAttribute('height', '200%');
+
+        const feDropShadow = document.createElementNS('http://www.w3.org/2000/svg', 'feDropShadow');
+        feDropShadow.setAttribute('dx', '0');
+        feDropShadow.setAttribute('dy', '2');
+        feDropShadow.setAttribute('stdDeviation', '6');
+        feDropShadow.setAttribute('flood-color', this.colors.primary);
+        feDropShadow.setAttribute('flood-opacity', '0.5');
+        selectFilter.appendChild(feDropShadow);
+
+        defs.appendChild(selectFilter);
+
         this.svg.appendChild(defs);
     }
 
@@ -440,10 +458,12 @@ export class SvgRenderer extends EventEmitter {
 
         // Background
         const bg = this.createRect(0, 0, w, h, 4, this.colors.surface);
-        bg.setAttribute('stroke', node.selected ? this.colors.primary : this.colors.outline);
-        bg.setAttribute('stroke-width', node.selected ? '2' : '1');
+        bg.setAttribute('stroke', this.colors.outline);
+        bg.setAttribute('stroke-width', '1');
 
-        if (node.runState === 'active' || node.runState === 'waiting') {
+        if (node.selected) {
+            bg.setAttribute('filter', 'url(#selectShadow)');
+        } else if (node.runState === 'active' || node.runState === 'waiting') {
             bg.setAttribute('filter', 'url(#glow)');
         }
         group.appendChild(bg);
