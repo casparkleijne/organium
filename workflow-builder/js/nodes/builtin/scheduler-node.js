@@ -55,6 +55,21 @@ export class SchedulerNode extends BaseNode {
         super.resetRunState();
         this.runCount = 0;
     }
+
+    getPreviewText() {
+        const interval = this.properties.interval || 5;
+        const repeats = this.properties.repeats ?? -1;
+
+        let text = `${interval}s`;
+
+        if (repeats === -1) {
+            text += ' ∞';
+        } else {
+            text += ` (${this.runCount}/${repeats})`;
+        }
+
+        return text;
+    }
 }
 
 NodeRegistry.register(SchedulerNode);
