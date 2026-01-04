@@ -23,6 +23,7 @@ export class SvgRenderer extends EventEmitter {
         this.connectionLayer = this.createGroup('connection-layer');
         this.nodeLayer = this.createGroup('node-layer');
         this.overlayLayer = this.createGroup('overlay-layer');
+        this.screenLayer = this.createGroup('screen-layer'); // No transform, for screen-space UI
 
         // Viewport
         this.viewport = { panX: 0, panY: 0, zoom: 1 };
@@ -751,7 +752,7 @@ export class SvgRenderer extends EventEmitter {
     }
 
     renderSelectionBox() {
-        let rect = this.overlayLayer.querySelector('.selection-box');
+        let rect = this.screenLayer.querySelector('.selection-box');
 
         if (!this.selectionBox) {
             if (rect) rect.remove();
@@ -761,7 +762,7 @@ export class SvgRenderer extends EventEmitter {
         if (!rect) {
             rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
             rect.classList.add('selection-box');
-            this.overlayLayer.appendChild(rect);
+            this.screenLayer.appendChild(rect);
         }
 
         rect.setAttribute('x', this.selectionBox.x);
