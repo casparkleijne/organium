@@ -6,10 +6,10 @@ import { NodeRegistry } from '../../core/registry.js';
 
 export class ActionNode extends FlowNode {
     static type = 'action';
-    static category = 'Flow';
-    static displayName = 'Action';
-    static icon = 'settings';
-    static color = '#29B6F6'; // Light blue - flow action
+    static category = 'Data';
+    static displayName = 'Task';
+    static icon = 'task_alt';
+    static color = '#29B6F6'; // Light blue
 
     static propertySchema = [
         { key: 'description', type: 'string', label: 'Description', defaultValue: '', placeholder: 'Describe this action' },
