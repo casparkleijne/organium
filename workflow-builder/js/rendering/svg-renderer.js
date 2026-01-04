@@ -72,6 +72,56 @@ export class SvgRenderer extends EventEmitter {
     _createDefs() {
         const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
 
+        // Liquid glass gradient for headers
+        const glassGradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+        glassGradient.setAttribute('id', 'glassOverlay');
+        glassGradient.setAttribute('x1', '0%');
+        glassGradient.setAttribute('y1', '0%');
+        glassGradient.setAttribute('x2', '0%');
+        glassGradient.setAttribute('y2', '100%');
+
+        const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+        stop1.setAttribute('offset', '0%');
+        stop1.setAttribute('stop-color', 'white');
+        stop1.setAttribute('stop-opacity', '0.35');
+        glassGradient.appendChild(stop1);
+
+        const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+        stop2.setAttribute('offset', '50%');
+        stop2.setAttribute('stop-color', 'white');
+        stop2.setAttribute('stop-opacity', '0.1');
+        glassGradient.appendChild(stop2);
+
+        const stop3 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+        stop3.setAttribute('offset', '100%');
+        stop3.setAttribute('stop-color', 'black');
+        stop3.setAttribute('stop-opacity', '0.15');
+        glassGradient.appendChild(stop3);
+
+        defs.appendChild(glassGradient);
+
+        // Highlight shine for top of header
+        const shineGradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+        shineGradient.setAttribute('id', 'headerShine');
+        shineGradient.setAttribute('x1', '0%');
+        shineGradient.setAttribute('y1', '0%');
+        shineGradient.setAttribute('x2', '100%');
+        shineGradient.setAttribute('y2', '100%');
+
+        const shineStop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+        shineStop1.setAttribute('offset', '0%');
+        shineStop1.setAttribute('stop-color', 'white');
+        shineStop1.setAttribute('stop-opacity', '0.4');
+        shineGradient.appendChild(shineStop1);
+
+        const shineStop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+        shineStop2.setAttribute('offset', '50%');
+        shineStop2.setAttribute('stop-color', 'white');
+        shineStop2.setAttribute('stop-opacity', '0');
+        shineGradient.appendChild(shineStop2);
+
+        defs.appendChild(shineGradient);
+
         // Glow filter for active/waiting nodes
         const glowFilter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
         glowFilter.setAttribute('id', 'glow');
@@ -406,6 +456,15 @@ export class SvgRenderer extends EventEmitter {
         // Header clip (to make bottom corners square)
         const headerBottom = this.createRect(0, headerHeight - 4, w, 4, 0, color);
         group.appendChild(headerBottom);
+
+        // Liquid glass overlay
+        const glassOverlay = this.createRect(0, 0, w, headerHeight, 4, 'url(#glassOverlay)');
+        glassOverlay.setAttribute('clip-path', 'inset(0 0 0 0 round 4px 4px 0 0)');
+        group.appendChild(glassOverlay);
+
+        // Top shine highlight
+        const shine = this.createRect(2, 2, w * 0.6, headerHeight * 0.4, 2, 'url(#headerShine)');
+        group.appendChild(shine);
 
         // Subtle double line at bottom of header
         const lineColor = this._blendColor(color, '#000000', 0.2);
