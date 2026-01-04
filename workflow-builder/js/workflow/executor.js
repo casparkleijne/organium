@@ -262,6 +262,10 @@ export class Executor extends EventEmitter {
                 progress: 0
             });
             node.setRunState('waiting');
+        } else if (result.queued) {
+            // Queue node holding message
+            node.setRunState('waiting');
+            this.store.emit('change');
         } else {
             node.setRunState('completed');
 
@@ -272,6 +276,9 @@ export class Executor extends EventEmitter {
                 } else if (result.repeat) {
                     // Repeater node
                     this._repeatMessage(node, result.message, result.outputPort, result.repeat);
+                } else if (result.queue) {
+                    // Queue node releasing messages
+                    this._releaseQueue(node, result.outputPort, result.queue);
                 } else {
                     this._forwardMessage(node, result.message, result.outputPort);
                 }
@@ -440,6 +447,36 @@ export class Executor extends EventEmitter {
         };
 
         sendRepeat(0);
+    }
+
+    _releaseQueue(fromNode, outputPort, queueConfig) {
+        const { messages, releaseMode } = queueConfig;
+
+        if (releaseMode === 'all') {
+            // Release all messages at once (like splitter)
+            messages.forEach((msg, index) => {
+                const forkedMessage = msg.fork(index, messages.length);
+                this._forwardMessage(fromNode, forkedMessage, outputPort);
+            });
+        } else {
+            // Release one by one with small delay
+            const sendNext = (index) => {
+                if (index >= messages.length || this.status !== 'running') return;
+
+                const forkedMessage = messages[index].fork(index, messages.length);
+                this._forwardMessage(fromNode, forkedMessage, outputPort);
+
+                if (index + 1 < messages.length) {
+                    this.pendingForwards++;
+                    setTimeout(() => {
+                        this.pendingForwards--;
+                        sendNext(index + 1);
+                    }, 100 / this.speed);
+                }
+            };
+
+            sendNext(0);
+        }
     }
 
     _startScheduler(node) {
