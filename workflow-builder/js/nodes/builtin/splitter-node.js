@@ -55,12 +55,12 @@ export class SplitterNode extends BaseNode {
         const mode = this.properties.mode || 'all';
         if (mode === 'random') {
             if (this.selectedBranch !== null) {
-                return `🎲 → #${this.selectedBranch + 1}`;
+                return `Rnd #${this.selectedBranch + 1}`;
             }
-            return '🎲 Random';
+            return 'Random';
         }
         if (this.branchCount > 0) {
-            return `→ ${this.branchCount}`;
+            return `${this.branchCount}x`;
         }
         return 'All';
     }
