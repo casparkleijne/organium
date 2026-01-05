@@ -12,7 +12,7 @@ export class DelayNode extends FlowNode {
     static color = '#42A5F5'; // Blue - flow timing
 
     static propertySchema = [
-        { key: 'seconds', type: 'number', label: 'Seconds', defaultValue: 1, min: 0.1, step: 0.1 }
+        { key: 'ms', type: 'number', label: 'Delay (ms)', defaultValue: 1000, min: 100, step: 100 }
     ];
 
     constructor(x, y, id) {
@@ -26,19 +26,19 @@ export class DelayNode extends FlowNode {
     }
 
     enrich(message) {
-        const seconds = this.properties.seconds || 1;
+        const ms = this.properties.ms || 1000;
         const startedAt = Date.now();
 
         return {
             message: message.withPath(this.id).withPayload({
                 [`_delay_${this.id}`]: {
-                    seconds: seconds,
+                    ms: ms,
                     startedAt: startedAt,
-                    completedAt: null // Will be set when delay completes
+                    completedAt: null
                 }
             }),
             outputPort: 'output',
-            delay: seconds * 1000
+            delay: ms
         };
     }
 
@@ -53,7 +53,7 @@ export class DelayNode extends FlowNode {
     }
 
     getPreviewText() {
-        return `${this.properties.seconds}s`;
+        return `${this.properties.ms || 1000}ms`;
     }
 }
 

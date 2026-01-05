@@ -198,15 +198,13 @@ export class Validator {
 
         // For each scheduler, calculate max path time
         schedulers.forEach(scheduler => {
-            const intervalMs = (scheduler.properties.interval || 5) * 1000;
+            const intervalMs = scheduler.properties.interval || 5000;
             const maxPathTime = this._calculateMaxPathTime(scheduler.id, outgoingMap, new Set());
 
             if (maxPathTime > intervalMs) {
-                const intervalSec = intervalMs / 1000;
-                const pathSec = (maxPathTime / 1000).toFixed(1);
                 errors.push({
                     type: 'warning',
-                    message: `Path from '${scheduler.getDisplayTitle()}' takes ${pathSec}s but interval is ${intervalSec}s - messages may pile up`,
+                    message: `Path from '${scheduler.getDisplayTitle()}' takes ${maxPathTime}ms but interval is ${intervalMs}ms - messages may pile up`,
                     nodeId: scheduler.id
                 });
             }
@@ -227,7 +225,7 @@ export class Validator {
         const type = node.getType();
 
         if (type === 'delay') {
-            nodeTime = (node.properties.seconds || 1) * 1000;
+            nodeTime = node.properties.ms || 1000;
         } else if (type === 'repeater') {
             const count = node.properties.count || 3;
             const delay = node.properties.delay || 0;

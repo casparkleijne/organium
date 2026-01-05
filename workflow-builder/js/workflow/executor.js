@@ -524,7 +524,7 @@ export class Executor extends EventEmitter {
     }
 
     _startScheduler(node) {
-        const interval = (node.properties.interval || 5) * 1000;
+        const interval = node.properties.interval || 5000;
 
         const tick = () => {
             if (this.status !== 'running') return;

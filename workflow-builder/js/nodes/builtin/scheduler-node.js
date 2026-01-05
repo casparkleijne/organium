@@ -13,7 +13,7 @@ export class SchedulerNode extends BaseNode {
     static color = '#66BB6A'; // Light green - recurring trigger
 
     static propertySchema = [
-        { key: 'interval', type: 'number', label: 'Interval (seconds)', defaultValue: 5, min: 0.1, step: 0.1 },
+        { key: 'interval', type: 'number', label: 'Interval (ms)', defaultValue: 5000, min: 100, step: 100 },
         { key: 'repeats', type: 'number', label: 'Repeats (-1 = infinite)', defaultValue: -1, min: -1, step: 1 }
     ];
     static inputPorts = [];
@@ -57,13 +57,13 @@ export class SchedulerNode extends BaseNode {
     }
 
     getPreviewText() {
-        const interval = this.properties.interval || 5;
+        const interval = this.properties.interval || 5000;
         const repeats = this.properties.repeats ?? -1;
 
-        let text = `${interval}s`;
+        let text = `${interval}ms`;
 
         if (repeats === -1) {
-            text += ' ∞';
+            text += ' x';
         } else {
             text += ` (${this.runCount}/${repeats})`;
         }
